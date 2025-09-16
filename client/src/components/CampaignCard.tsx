@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Heart, Users, Calendar } from 'lucide-react';
 
 interface CampaignCardProps {
@@ -43,67 +42,71 @@ export default function CampaignCard({ campaign, onDonate }: CampaignCardProps) 
       whileHover={{ y: -4 }}
       className="hover-lift"
     >
-      <Card className="bg-card border-border hover:shadow-lg transition-shadow duration-300" data-testid={`card-campaign-${campaign.id}`}>
-        <CardContent className="p-6">
-          {campaign.image && (
-            <div className="mb-4">
-              <img
-                src={campaign.image}
-                alt={campaign.title}
-                className="w-full h-32 rounded-lg object-cover border border-border"
-                data-testid={`img-campaign-${campaign.id}`}
-              />
-            </div>
-          )}
-
-          <h3 className="font-semibold text-card-foreground mb-2 text-lg" data-testid={`text-title-${campaign.id}`}>
-            {campaign.title}
-          </h3>
-          
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-2" data-testid={`text-description-${campaign.id}`}>
-            {campaign.description}
-          </p>
-
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Raised</span>
-              <span className="font-medium text-card-foreground">
-                <span data-testid={`text-raised-${campaign.id}`}>{formatCurrency(campaign.raised)}</span> of{' '}
-                <span data-testid={`text-goal-${campaign.id}`}>{formatCurrency(campaign.goal)}</span>
+      <Card className="bg-card border-border hover:shadow-lg transition-shadow duration-300 overflow-hidden" data-testid={`card-campaign-${campaign.id}`}>
+        {/* Large Image */}
+        {campaign.image && (
+          <div className="relative">
+            <img
+              src={campaign.image}
+              alt={campaign.title}
+              className="w-full h-48 object-cover"
+              data-testid={`img-campaign-${campaign.id}`}
+            />
+            <div className="absolute top-3 right-3">
+              <span className="bg-black/60 text-white px-2 py-1 rounded-full text-xs font-medium">
+                {campaign.daysLeft}d left
               </span>
             </div>
-
-            <div className="relative">
-              <Progress 
-                value={progressClamped} 
-                className="h-3 bg-muted"
-                data-testid={`progress-${campaign.id}`}
-              />
-              <div 
-                className="absolute inset-0 bg-gradient-to-r from-primary to-chart-2 rounded-full transition-all duration-500"
-                style={{ width: `${progressClamped}%` }}
-              />
-            </div>
-
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <div className="flex items-center space-x-1">
-                <Users className="w-4 h-4" />
-                <span data-testid={`text-donors-${campaign.id}`}>
-                  {campaign.donorCount || 0} donors
-                </span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Calendar className="w-4 h-4" />
-                <span data-testid={`text-days-left-${campaign.id}`}>
-                  {campaign.daysLeft} days left
-                </span>
+            <div className="absolute bottom-3 left-3 right-3">
+              <div className="bg-black/60 text-white px-3 py-2 rounded-lg">
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Raised</span>
+                  <span className="font-semibold">
+                    {formatCurrency(campaign.raised)} / {formatCurrency(campaign.goal)}
+                  </span>
+                </div>
+                <div className="w-full bg-white/20 rounded-full h-1.5">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-orange-500 h-1.5 rounded-full transition-all duration-500"
+                    style={{ width: `${progressClamped}%` }}
+                  />
+                </div>
               </div>
             </div>
           </div>
+        )}
 
+        <CardContent className="p-4">
+          {/* Title */}
+          <h3 className="font-semibold text-card-foreground mb-2 text-lg line-clamp-2" data-testid={`text-title-${campaign.id}`}>
+            {campaign.title}
+          </h3>
+          
+          {/* Description */}
+          <p className="text-sm text-muted-foreground mb-3 line-clamp-2" data-testid={`text-description-${campaign.id}`}>
+            {campaign.description}
+          </p>
+
+          {/* Stats */}
+          <div className="flex justify-between items-center mb-4 text-sm text-muted-foreground">
+            <div className="flex items-center space-x-1">
+              <Users className="w-4 h-4" />
+              <span data-testid={`text-donors-${campaign.id}`}>
+                {campaign.donorCount || 0} donors
+              </span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Calendar className="w-4 h-4" />
+              <span data-testid={`text-days-left-${campaign.id}`}>
+                {campaign.daysLeft} days left
+              </span>
+            </div>
+          </div>
+
+          {/* Donate Button */}
           <Button
             onClick={handleDonate}
-            className="w-full mt-4 bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+            className="w-full bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
             data-testid={`button-donate-${campaign.id}`}
           >
             <Heart className="w-4 h-4 mr-2" />

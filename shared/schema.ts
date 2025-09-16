@@ -6,7 +6,11 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
-  name: text("name").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  address: text("address").notNull(),
+  nic: text("nic").notNull().unique(),
+  phoneNumber: text("phone_number").notNull(),
   role: text("role").notNull().default("normal_user"), // super_user, community_leader, normal_user
   communityId: varchar("community_id"),
   profileImage: text("profile_image"),
@@ -16,6 +20,8 @@ export const users = pgTable("users", {
 export const communities = pgTable("communities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
+  description: text("description"),
+  location: text("location"),
   leaderId: varchar("leader_id"),
   memberCount: integer("member_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),

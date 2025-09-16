@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { uploadFile } from '@/services/firebase';
+import { uploadFile, updateUserProfileImage } from '@/services/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { 
   HandHeart, 
@@ -17,7 +18,10 @@ import {
   Shield,
   Plus,
   BarChart3,
-  Settings
+  Settings,
+  Crown,
+  Heart,
+  Megaphone
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,7 +31,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentView, onViewChange, notificationCount = 0 }: SidebarProps) {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, selectedRole, setSelectedRole } = useAuth();
   const { toast } = useToast();
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -39,9 +43,8 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
     try {
       const imagePath = `profile-images/${currentUser.id}/${Date.now()}-${file.name}`;
       const imageUrl = await uploadFile(file, imagePath);
-      
-      // Update user profile image in Firestore
-      // This would typically involve updating the user document
+
+      await updateUserProfileImage(currentUser.id, imageUrl);
       
       toast({
         title: "Profile updated",
@@ -74,24 +77,41 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
     }
   };
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'issues', label: 'Issues', icon: AlertTriangle },
-    { id: 'campaigns', label: 'Campaigns', icon: DollarSign },
-    { id: 'community', label: 'Community', icon: Users },
-  ];
+  // Role-based variables
+  const isSuperUser = currentUser?.role === 'super_user';
+  const isCommunityLeader = currentUser?.role === 'community_leader';
+  const isAdmin = currentUser?.role === 'super_user' || (isCommunityLeader && selectedRole === 'leader');
 
-  const adminMenuItems = [
-    { id: 'admin-dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'create-issue', label: 'Create Issue', icon: Plus },
-    { id: 'create-campaign', label: 'Create Campaign', icon: Plus },
-    { id: 'manage-communities', label: 'Manage Communities', icon: Users },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings },
-  ];
+  // Unified menu structure - items change based on role but structure stays the same
+  const getMenuItems = () => {
+    if (isSuperUser) {
+      return [
+        { id: 'super-dashboard', label: 'Super Dashboard', icon: Crown },
+        { id: 'communities', label: 'All Communities', icon: Users },
+        { id: 'campaigns', label: 'All Campaigns', icon: DollarSign },
+        { id: 'issues', label: 'All Issues', icon: AlertTriangle },
+        { id: 'users', label: 'Manage Users', icon: Crown },
+      ];
+    }
 
-  const isAdmin = currentUser?.role === 'super_user' || currentUser?.role === 'community_leader';
-  const items = isAdmin ? adminMenuItems : menuItems;
+    if (isAdmin) {
+      return [
+        { id: 'admin-dashboard', label: 'Statistics', icon: BarChart3 },
+        { id: 'admin-issues', label: 'All Issues', icon: AlertTriangle },
+        { id: 'admin-campaigns', label: 'All Campaigns', icon: DollarSign },
+        { id: 'create-issue', label: 'Add Issue', icon: Plus },
+        { id: 'create-campaign', label: 'Raise Campaign', icon: Megaphone },
+      ];
+    }
+
+    return [
+      { id: 'dashboard', label: 'Dashboard', icon: Home },
+      { id: 'issues', label: 'Issues', icon: AlertTriangle },
+      { id: 'campaigns', label: 'Campaigns', icon: DollarSign },
+    ];
+  };
+
+  const items = getMenuItems();
 
   return (
     <motion.aside
@@ -109,7 +129,9 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
           className="flex items-center mb-8"
         >
           <div className="w-10 h-10 savetogather-gradient rounded-lg flex items-center justify-center mr-3 shadow-lg">
-            {isAdmin ? (
+            {isSuperUser ? (
+              <Crown className="w-5 h-5 text-primary-foreground" />
+            ) : isAdmin ? (
               <Shield className="w-5 h-5 text-primary-foreground" />
             ) : (
               <HandHeart className="w-5 h-5 text-primary-foreground" />
@@ -117,25 +139,26 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
           </div>
           <div>
             <h2 className="text-xl font-bold font-serif text-gradient">SaveToGather</h2>
-            {isAdmin && (
+            {isSuperUser && (
+              <p className="text-xs text-muted-foreground">Super Admin</p>
+            )}
+            {isAdmin && !isSuperUser && (
               <p className="text-xs text-muted-foreground">Admin Panel</p>
+            )}
+            {isCommunityLeader && selectedRole === 'member' && (
+              <p className="text-xs text-muted-foreground">Member View</p>
             )}
           </div>
         </motion.div>
 
         {/* User Profile Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-8 p-4 bg-muted rounded-lg"
-        >
-          <div className="flex items-center space-x-3 mb-3">
+        <div className="mb-6 pb-6 border-b border-slate-200 dark:border-slate-700">
+          <div className="flex items-center space-x-3 mb-4">
             <div className="relative">
-              <Avatar className="w-12 h-12 border-2 border-border">
+              <Avatar className="w-14 h-14">
                 <AvatarImage src={currentUser?.profileImage} />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {currentUser?.name?.charAt(0).toUpperCase() || 'U'}
+                <AvatarFallback className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-lg font-medium">
+                  {currentUser?.firstName?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               {uploadingImage && (
@@ -143,38 +166,67 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
+              <label className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full p-1.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                <Camera className="w-3 h-3 text-slate-500" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  disabled={uploadingImage}
+                  data-testid="input-profile-image"
+                />
+              </label>
             </div>
-            <div>
-              <h3 className="font-medium text-card-foreground" data-testid="text-username">
-                {currentUser?.name || 'User'}
+            <div className="flex-1">
+              <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-base" data-testid="text-username">
+                {currentUser?.firstName && currentUser?.lastName 
+                  ? `${currentUser.firstName} ${currentUser.lastName}` 
+                  : currentUser?.firstName || 'User'}
               </h3>
-              <p className="text-sm text-muted-foreground" data-testid="text-role">
+              <p className="text-sm text-slate-500 dark:text-slate-400" data-testid="text-role">
                 {currentUser?.role === 'super_user' ? 'Super Admin' :
-                 currentUser?.role === 'community_leader' ? 'Community Leader' : 'Community Member'}
+                 currentUser?.role === 'community_leader' ? 
+                   (selectedRole === 'leader' ? 'Community Leader' : 'Community Member') : 
+                 'Community Member'}
               </p>
             </div>
           </div>
-          <div className="relative">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              disabled={uploadingImage}
-              data-testid="input-profile-image"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-primary hover:bg-accent"
-              disabled={uploadingImage}
-              data-testid="button-upload-image"
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              {uploadingImage ? 'Uploading...' : 'Update Photo'}
-            </Button>
+        </div>
+
+        {/* Role Switcher for Community Leaders */}
+        {isCommunityLeader && (
+          <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Switch Mode
+              </h4>
+              <Badge variant={selectedRole === 'leader' ? 'default' : 'secondary'} className="text-xs">
+                {selectedRole === 'leader' ? 'Leader' : 'Member'}
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <Button
+                variant={selectedRole === 'leader' ? 'default' : 'outline'}
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => setSelectedRole('leader')}
+              >
+                <Shield className="w-3 h-3 mr-1" />
+                Leader Mode
+              </Button>
+              <Button
+                variant={selectedRole === 'member' ? 'default' : 'outline'}
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => setSelectedRole('member')}
+              >
+                <Heart className="w-3 h-3 mr-1" />
+                Member Mode
+              </Button>
+            </div>
           </div>
-        </motion.div>
+        )}
 
         {/* Navigation Menu */}
         <nav className="space-y-2">

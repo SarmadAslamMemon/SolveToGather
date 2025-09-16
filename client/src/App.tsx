@@ -3,51 +3,63 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Login from "@/components/Login";
-import Dashboard from "@/components/Dashboard";
-import AdminPanel from "@/components/AdminPanel";
+import MainContent from "@/components/MainContent";
 import Sidebar from "@/components/Sidebar";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
+import RoleSelection from "@/components/RoleSelection";
 import NotFound from "@/pages/not-found";
+import PaymentCallback from "@/pages/PaymentCallback";
 
 function AppContent() {
-  const { currentUser } = useAuth();
+  const { currentUser, loading, selectedRole, setSelectedRole } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
+
+  // Determine admin mode early and keep hooks above early returns
+  const isSuperUser = currentUser?.role === 'super_user';
+  const isCommunityLeader = currentUser?.role === 'community_leader';
+  const isAdminMode = !!(isSuperUser || (isCommunityLeader && selectedRole === 'leader'));
+
+  // Ensure admins land on Statistics by default
+  useEffect(() => {
+    if (isAdminMode && currentView === 'dashboard') {
+      setCurrentView('admin-dashboard');
+    }
+  }, [isAdminMode, currentView]);
+
+  // Allow components to request navigation without prop drilling
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<{ view: string }>;
+      if (custom.detail?.view) {
+        setCurrentView(custom.detail.view);
+      }
+    };
+    window.addEventListener('navigate-view', handler as EventListener);
+    return () => window.removeEventListener('navigate-view', handler as EventListener);
+  }, []);
+
+  // Show loading skeleton while auth is initializing
+  if (loading) {
+    return <LoadingSkeleton />;
+  }
 
   if (!currentUser) {
     return <Login />;
   }
 
-  const isAdmin = currentUser.role === 'super_user' || currentUser.role === 'community_leader';
+  // Show role selection for community leaders who haven't selected a role
+  if (currentUser.role === 'community_leader' && !selectedRole) {
+    return <RoleSelection onRoleSelected={setSelectedRole} />;
+  }
 
   const handleViewChange = (view: string) => {
     setCurrentView(view);
-  };
-
-  const renderContent = () => {
-    switch (currentView) {
-      case 'dashboard':
-      case 'issues':
-      case 'campaigns':
-      case 'community':
-      case 'notifications':
-        return <Dashboard />;
-      case 'admin-dashboard':
-      case 'create-issue':
-      case 'create-campaign':
-      case 'manage-communities':
-      case 'analytics':
-      case 'settings':
-        return isAdmin ? <AdminPanel /> : <Dashboard />;
-      default:
-        return <Dashboard />;
-    }
   };
 
   return (
@@ -66,7 +78,7 @@ function AppContent() {
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
         >
-          {renderContent()}
+          <MainContent currentView={currentView} />
         </motion.div>
       </AnimatePresence>
     </div>
@@ -77,6 +89,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={AppContent} />
+      <Route path="/payment/callback" component={PaymentCallback} />
       <Route component={NotFound} />
     </Switch>
   );

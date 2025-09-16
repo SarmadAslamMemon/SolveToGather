@@ -24,16 +24,19 @@ interface IssueCardProps {
   onLike?: (issueId: string) => void;
   onComment?: (issueId: string) => void;
   onShare?: (issueId: string) => void;
+  onOpen?: (issue: any) => void;
 }
 
-export default function IssueCard({ issue, onLike, onComment, onShare }: IssueCardProps) {
+export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }: IssueCardProps) {
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(issue.likes || 0);
+  const [likesCount, setLikesCount] = useState(issue.likesCount || 0);
   const [isLiking, setIsLiking] = useState(false);
+  const [imageIndex, setImageIndex] = useState(0);
 
-  const handleLike = async () => {
+  const handleLike = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!currentUser) {
       toast({
         title: "Login required",
@@ -60,11 +63,13 @@ export default function IssueCard({ issue, onLike, onComment, onShare }: IssueCa
     }
   };
 
-  const handleComment = () => {
+  const handleComment = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     onComment?.(issue.id);
   };
 
-  const handleShare = () => {
+  const handleShare = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (navigator.share) {
       navigator.share({
         title: issue.title,
@@ -104,89 +109,123 @@ export default function IssueCard({ issue, onLike, onComment, onShare }: IssueCa
       transition={{ duration: 0.3 }}
       whileHover={{ y: -4 }}
       className="hover-lift"
+      onClick={() => onOpen?.(issue)}
     >
-      <Card className="bg-card border-border hover:shadow-lg transition-shadow duration-300" data-testid={`card-issue-${issue.id}`}>
-        <CardContent className="p-6">
-          <div className="flex items-start space-x-4">
-            {issue.image && (
-              <div className="flex-shrink-0">
-                <img
-                  src={issue.image}
-                  alt={issue.title}
-                  className="w-20 h-20 rounded-lg object-cover border border-border"
-                  data-testid={`img-issue-${issue.id}`}
-                />
-              </div>
+      <Card className="bg-card border-border hover:shadow-lg transition-shadow duration-300 overflow-hidden" data-testid={`card-issue-${issue.id}`}>
+        {/* Large Image */}
+        {((issue.images && (issue.images as any[]).length > 0) || issue.image) && (
+          <div className="relative">
+            <img
+              src={(issue.images && (issue.images as any[])[imageIndex]) || issue.image}
+              alt={issue.title}
+              className="w-full h-40 object-cover"
+              data-testid={`img-issue-${issue.id}`}
+            />
+            
+            {/* Image Navigation */}
+            {issue.images && (issue.images as any[]).length > 1 && (
+              <>
+                <button
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1.5 rounded-full transition-colors"
+                  onClick={(e) => { e.stopPropagation(); setImageIndex((prev) => (prev - 1 + (issue.images as any[]).length) % (issue.images as any[]).length); }}
+                  aria-label="Previous image"
+                >
+                  ‹
+                </button>
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1.5 rounded-full transition-colors"
+                  onClick={(e) => { e.stopPropagation(); setImageIndex((prev) => (prev + 1) % (issue.images as any[]).length); }}
+                  aria-label="Next image"
+                >
+                  ›
+                </button>
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {(issue.images as any[]).map((_: any, idx: number) => (
+                    <span key={idx} className={`w-2 h-2 rounded-full ${idx === imageIndex ? 'bg-white' : 'bg-white/60'}`} />
+                  ))}
+                </div>
+              </>
             )}
             
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-card-foreground text-lg leading-tight" data-testid={`text-title-${issue.id}`}>
-                  {issue.title}
-                </h3>
-                <div className="flex items-center text-muted-foreground text-sm ml-4">
-                  <Clock className="w-4 h-4 mr-1" />
-                  <span data-testid={`text-time-${issue.id}`}>{formatTimeAgo(issue.createdAt)}</span>
-                </div>
-              </div>
-
-              {/* Author info */}
-              <div className="flex items-center space-x-2 mb-3">
-                <Avatar className="w-6 h-6">
-                  <AvatarImage src={issue.authorImage} />
-                  <AvatarFallback className="text-xs">
-                    {issue.authorName?.charAt(0) || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm text-muted-foreground" data-testid={`text-author-${issue.id}`}>
-                  {issue.authorName || 'Anonymous'}
-                </span>
-              </div>
-
-              <p className="text-muted-foreground text-sm mb-4 line-clamp-3" data-testid={`text-description-${issue.id}`}>
-                {issue.description}
-              </p>
-
-              <div className="flex items-center space-x-6">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLike}
-                  disabled={isLiking}
-                  className={`flex items-center space-x-2 transition-colors ${
-                    isLiked 
-                      ? 'text-red-500 hover:text-red-600' 
-                      : 'text-muted-foreground hover:text-red-500'
-                  }`}
-                  data-testid={`button-like-${issue.id}`}
-                >
-                  <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                  <span data-testid={`text-likes-${issue.id}`}>{likesCount}</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleComment}
-                  className="flex items-center space-x-2 text-muted-foreground hover:text-primary transition-colors"
-                  data-testid={`button-comment-${issue.id}`}
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span data-testid={`text-comments-${issue.id}`}>{issue.comments || 0}</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleShare}
-                  className="flex items-center space-x-2 text-muted-foreground hover:text-accent-foreground transition-colors"
-                  data-testid={`button-share-${issue.id}`}
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span>Share</span>
-                </Button>
+            {/* Time overlay */}
+            <div className="absolute top-2 right-2">
+              <div className="bg-black/60 text-white px-2 py-1 rounded-full text-xs flex items-center">
+                <Clock className="w-3 h-3 mr-1" />
+                <span data-testid={`text-time-${issue.id}`}>{formatTimeAgo(issue.createdAt)}</span>
               </div>
             </div>
+          </div>
+        )}
+
+        <CardContent className="p-4">
+          {/* Title */}
+          <h3 className="font-semibold text-card-foreground mb-2 text-lg line-clamp-2" data-testid={`text-title-${issue.id}`}>
+            {issue.title}
+          </h3>
+
+          {/* Author info */}
+          <div className="flex items-center space-x-2 mb-3">
+            <Avatar className="w-6 h-6">
+              <AvatarImage src={issue.authorImage} />
+              <AvatarFallback className="text-xs bg-gradient-to-r from-blue-500 to-orange-500 text-white">
+                {issue.authorName?.charAt(0) || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm text-muted-foreground" data-testid={`text-author-${issue.id}`}>
+              {issue.authorName || 'Anonymous'}
+            </span>
+            {!((issue.images && (issue.images as any[]).length > 0) || issue.image) && (
+              <div className="ml-auto flex items-center text-muted-foreground text-sm">
+                <Clock className="w-4 h-4 mr-1" />
+                <span data-testid={`text-time-${issue.id}`}>{formatTimeAgo(issue.createdAt)}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Description */}
+          <p className="text-muted-foreground text-sm mb-4 line-clamp-2" data-testid={`text-description-${issue.id}`}>
+            {issue.description}
+          </p>
+
+          {/* Action buttons */}
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLike}
+              disabled={isLiking}
+              className={`flex items-center space-x-2 transition-colors ${
+                isLiked 
+                  ? 'text-red-500 hover:text-red-600' 
+                  : 'text-muted-foreground hover:text-red-500'
+              }`}
+              data-testid={`button-like-${issue.id}`}
+            >
+              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+              <span data-testid={`text-likes-${issue.id}`}>{likesCount}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleComment}
+              className="flex items-center space-x-2 text-muted-foreground hover:text-blue-500 transition-colors"
+              data-testid={`button-comment-${issue.id}`}
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span data-testid={`text-comments-${issue.id}`}>{issue.commentsCount || 0}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShare}
+              className="flex items-center space-x-2 text-muted-foreground hover:text-orange-500 transition-colors"
+              data-testid={`button-share-${issue.id}`}
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Share</span>
+            </Button>
           </div>
         </CardContent>
       </Card>

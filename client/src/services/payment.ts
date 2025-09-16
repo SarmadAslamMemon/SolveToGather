@@ -1,4 +1,6 @@
-import { PaymentMethod, DonationSummary } from '@/types';
+import { PaymentMethod, DonationSummary, Payment } from '@/types';
+import { processJazzCashPayment, formatJazzCashError } from './jazzcash';
+import { createPayment, updatePaymentStatus } from './firebase';
 
 export const PAYMENT_METHODS: PaymentMethod[] = [
   {
@@ -22,6 +24,13 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
     color: 'bg-blue-500',
     type: 'bank',
   },
+  {
+    id: 'raast',
+    name: 'RAAST',
+    icon: 'fas fa-exchange-alt',
+    color: 'bg-purple-500',
+    type: 'raast',
+  },
 ];
 
 export const calculateDonationSummary = (amount: number): DonationSummary => {
@@ -31,26 +40,87 @@ export const calculateDonationSummary = (amount: number): DonationSummary => {
   return { amount, fee, total };
 };
 
-export const processJazzCashPayment = async (amount: number, phoneNumber: string) => {
-  // Integration with JazzCash API
-  // This would typically involve calling JazzCash's payment gateway
+export const processPayment = async (paymentData: {
+  campaignId: string;
+  communityId: string;
+  userId: string;
+  amount: number;
+  paymentMethod: 'jazzcash' | 'easypaisa' | 'bank' | 'raast';
+  phoneNumber?: string;
+  description: string;
+}): Promise<{ success: boolean; paymentId?: string; transactionId?: string; error?: string }> => {
   try {
-    // Simulate API call
-    const response = await fetch('/api/payment/jazzcash', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount, phoneNumber }),
-    });
+    // Calculate fees
+    const summary = calculateDonationSummary(paymentData.amount);
     
-    if (!response.ok) {
-      throw new Error('Payment processing failed');
+    // Create payment record in database
+    const paymentRecord = {
+      campaignId: paymentData.campaignId,
+      communityId: paymentData.communityId,
+      userId: paymentData.userId,
+      amount: summary.amount,
+      fee: summary.fee,
+      total: summary.total,
+      paymentMethod: paymentData.paymentMethod,
+      phoneNumber: paymentData.phoneNumber,
+      userTransactionId: `USER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      status: 'pending' as const,
+    };
+    
+    const paymentId = await createPayment(paymentRecord);
+    
+    // Process payment based on method
+    let result;
+    switch (paymentData.paymentMethod) {
+      case 'jazzcash':
+        result = await processJazzCashPayment({
+          amount: summary.total,
+          phoneNumber: paymentData.phoneNumber || '',
+          campaignId: paymentData.campaignId,
+          userId: paymentData.userId,
+          description: paymentData.description,
+        });
+        break;
+      case 'easypaisa':
+        result = await processEasyPaisaPayment(summary.total, paymentData.phoneNumber || '');
+        break;
+      case 'bank':
+        result = await processBankTransfer(summary.total, {});
+        break;
+      case 'raast':
+        // Implement RAAST integration
+        result = { success: true, transactionId: `RAST_${Date.now()}` };
+        break;
+      default:
+        throw new Error('Unsupported payment method');
     }
     
-    const result = await response.json();
-    return result;
+    if (result.success) {
+      // Update payment status to completed
+      await updatePaymentStatus(paymentId, 'completed', result.transactionId);
+      
+      return {
+        success: true,
+        paymentId,
+        transactionId: result.transactionId
+      };
+    } else {
+      // Update payment status to failed
+      await updatePaymentStatus(paymentId, 'failed', undefined, result.error);
+      
+      return {
+        success: false,
+        paymentId,
+        error: result.error || 'Payment processing failed'
+      };
+    }
+    
   } catch (error) {
-    console.error('JazzCash payment error:', error);
-    throw error;
+    console.error('Payment processing error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Payment processing failed'
+    };
   }
 };
 
