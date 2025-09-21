@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import Dashboard from './Dashboard';
+import FeedPage from './FeedPage';
 import IssuesList from '@/components/views/IssuesList';
 import CampaignsList from '@/components/views/CampaignsList';
 import IssuesPage from '@/pages/IssuesPage';
@@ -121,6 +122,11 @@ export default function MainContent({ currentView }: MainContentProps) {
 
   // Super User gets special interface
   if (isSuperUser) {
+    // Super users use AdminPanel for create-issue and create-campaign
+    if (currentView === 'create-issue' || currentView === 'create-campaign') {
+      return <AdminPanel currentView={currentView} />;
+    }
+    
     return (
       <>
         <SuperUserPanel currentView={currentView} onUserRoleChange={handleUserRoleChange} onRefreshUsers={refreshUsersRef} />
@@ -161,7 +167,10 @@ export default function MainContent({ currentView }: MainContentProps) {
   if (currentView === 'campaigns') {
     return <CampaignsList />;
   }
+  if (currentView === 'dashboard') {
+    return <Dashboard />;
+  }
 
-  // Default dashboard for all other cases (including community leaders in member mode)
-  return <Dashboard />;
+  // Default feed page for all other cases (including community leaders in member mode)
+  return <FeedPage />;
 }

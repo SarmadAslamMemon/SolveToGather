@@ -21,7 +21,8 @@ import {
   Settings,
   Crown,
   Heart,
-  Megaphone
+  Megaphone,
+  Newspaper
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -91,6 +92,8 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
         { id: 'campaigns', label: 'All Campaigns', icon: DollarSign },
         { id: 'issues', label: 'All Issues', icon: AlertTriangle },
         { id: 'users', label: 'Manage Users', icon: Crown },
+        { id: 'create-issue', label: 'Add Issue', icon: Plus },
+        { id: 'create-campaign', label: 'Raise Campaign', icon: Megaphone },
       ];
     }
 
@@ -105,6 +108,7 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
     }
 
     return [
+      { id: 'feed', label: 'Community Feed', icon: Newspaper },
       { id: 'dashboard', label: 'Dashboard', icon: Home },
       { id: 'issues', label: 'Issues', icon: AlertTriangle },
       { id: 'campaigns', label: 'Campaigns', icon: DollarSign },

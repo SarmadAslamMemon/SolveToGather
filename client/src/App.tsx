@@ -18,7 +18,7 @@ import PaymentCallback from "@/pages/PaymentCallback";
 
 function AppContent() {
   const { currentUser, loading, selectedRole, setSelectedRole } = useAuth();
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [currentView, setCurrentView] = useState('feed');
 
   // Determine admin mode early and keep hooks above early returns
   const isSuperUser = currentUser?.role === 'super_user';
@@ -27,7 +27,7 @@ function AppContent() {
 
   // Ensure admins land on Statistics by default
   useEffect(() => {
-    if (isAdminMode && currentView === 'dashboard') {
+    if (isAdminMode && currentView === 'feed') {
       setCurrentView('admin-dashboard');
     }
   }, [isAdminMode, currentView]);
