@@ -239,7 +239,7 @@ export default function FeedPage() {
                         <CardContent className="p-6">
                           <div className="flex items-center space-x-3 mb-4">
                             <Avatar className="w-12 h-12 cursor-pointer" onClick={() => handleAuthorClick(post.authorId)}>
-                              <AvatarImage src={post.authorImage || post.image} />
+                              <AvatarImage src={post.authorImage || ''} />
                               <AvatarFallback className="bg-gradient-to-r from-blue-500 to-orange-500 text-white">
                                 {post.authorName?.charAt(0) || post.title?.charAt(0) || 'U'}
                               </AvatarFallback>
@@ -416,7 +416,7 @@ export default function FeedPage() {
                   onClick={() => handleAuthorClick(openPost.authorId)}
                 >
                   <Avatar className="w-10 h-10">
-                    <AvatarImage src={openPost.authorImage || openPost.image} />
+                    <AvatarImage src={openPost?.authorImage || ''} />
                     <AvatarFallback className="bg-gradient-to-r from-blue-500 to-orange-500 text-white">
                       {openPost.authorName?.charAt(0) || openPost.title?.charAt(0) || 'U'}
                     </AvatarFallback>

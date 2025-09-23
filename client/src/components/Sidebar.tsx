@@ -107,12 +107,20 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
       ];
     }
 
-    return [
+    const baseItems = [
       { id: 'feed', label: 'Community Feed', icon: Newspaper },
       { id: 'dashboard', label: 'Dashboard', icon: Home },
       { id: 'issues', label: 'Issues', icon: AlertTriangle },
       { id: 'campaigns', label: 'Campaigns', icon: DollarSign },
     ];
+
+    // Restore quick actions for community leaders in member mode
+    if (isCommunityLeader && selectedRole !== 'leader') {
+      baseItems.push({ id: 'create-issue', label: 'Add Issue', icon: Plus });
+      baseItems.push({ id: 'create-campaign', label: 'Raise Campaign', icon: Megaphone });
+    }
+
+    return baseItems;
   };
 
   const items = getMenuItems();
@@ -122,9 +130,10 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
       initial={{ x: -300 }}
       animate={{ x: 0 }}
       transition={{ duration: 0.3 }}
-      className="fixed left-0 top-0 h-full w-64 bg-card border-r border-border z-30"
+      className="fixed left-0 top-0 h-full w-64 bg-card border-r border-border z-30 overflow-hidden"
     >
-      <div className="p-6">
+      <div className="flex h-full flex-col">
+        <div className="p-6 flex-1 overflow-y-auto no-scrollbar">
         {/* Logo */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -246,7 +255,20 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
                 transition={{ delay: 0.4 + index * 0.1 }}
               >
                 <button
-                  onClick={() => onViewChange(item.id)}
+                  onClick={() => {
+                    // For community leaders in member mode, open modals instead of navigating
+                    if (isCommunityLeader && selectedRole !== 'leader') {
+                      if (item.id === 'create-issue') {
+                        window.dispatchEvent(new CustomEvent('open-create-issue'));
+                        return;
+                      }
+                      if (item.id === 'create-campaign') {
+                        window.dispatchEvent(new CustomEvent('open-create-campaign'));
+                        return;
+                      }
+                    }
+                    onViewChange(item.id);
+                  }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-md transition-colors ${
                     isActive
                       ? 'bg-accent text-accent-foreground'
@@ -291,25 +313,25 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
             </button>
           </motion.div>
         </nav>
-      </div>
-
-      {/* Bottom Action */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="absolute bottom-6 left-6 right-6"
-      >
-        <Button
-          onClick={handleLogout}
-          variant="destructive"
-          className="w-full"
-          data-testid="button-logout"
+        </div>
+        {/* Bottom Action */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="p-6 pt-4 border-t border-border"
         >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
-        </Button>
-      </motion.div>
+          <Button
+            onClick={handleLogout}
+            variant="destructive"
+            className="w-full"
+            data-testid="button-logout"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
+        </motion.div>
+      </div>
     </motion.aside>
   );
 }

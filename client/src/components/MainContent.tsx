@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import Dashboard from './Dashboard';
@@ -10,6 +10,8 @@ import AdminPanel from './AdminPanel';
 import SuperUserPanel from './SuperUserPanel';
 import UserRoleConfirmationModal from './UserRoleConfirmationModal';
 import Notifications from './Notifications';
+import CreateIssueModal from './CreateIssueModal';
+import CreateCampaignModal from './CreateCampaignModal';
 
 interface MainContentProps {
   currentView: string;
@@ -22,6 +24,20 @@ export default function MainContent({ currentView }: MainContentProps) {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedCommunity, setSelectedCommunity] = useState<any>(null);
   const refreshUsersRef = useRef<(() => void) | null>(null);
+  const [isCreateIssueOpen, setIsCreateIssueOpen] = useState(false);
+  const [isCreateCampaignOpen, setIsCreateCampaignOpen] = useState(false);
+
+  // Global events to open modals (from sidebar quick actions)
+  useEffect(() => {
+    const openIssue = () => setIsCreateIssueOpen(true);
+    const openCampaign = () => setIsCreateCampaignOpen(true);
+    window.addEventListener('open-create-issue', openIssue as EventListener);
+    window.addEventListener('open-create-campaign', openCampaign as EventListener);
+    return () => {
+      window.removeEventListener('open-create-issue', openIssue as EventListener);
+      window.removeEventListener('open-create-campaign', openCampaign as EventListener);
+    };
+  }, []);
 
   if (!currentUser) {
     return null;
@@ -172,5 +188,12 @@ export default function MainContent({ currentView }: MainContentProps) {
   }
 
   // Default feed page for all other cases (including community leaders in member mode)
-  return <FeedPage />;
+  return (
+    <>
+      <FeedPage />
+      {/* Quick action modals available for leaders in member mode and others when needed */}
+      <CreateIssueModal isOpen={isCreateIssueOpen} onClose={() => setIsCreateIssueOpen(false)} />
+      <CreateCampaignModal isOpen={isCreateCampaignOpen} onClose={() => setIsCreateCampaignOpen(false)} />
+    </>
+  );
 }
