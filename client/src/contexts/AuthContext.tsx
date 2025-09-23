@@ -7,7 +7,7 @@ import {
   User as FirebaseUser,
   getIdToken
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { AuthUser, USER_ROLES } from '@/types';
 
@@ -184,7 +184,56 @@ export function AuthProvider({ children }: AuthProviderProps) {
           profileImage: userData.profileImage,
           createdAt: userData.createdAt?.toDate(),
         });
+        return;
       }
+
+      // Fallback: try locating by email (for legacy users without firebaseUid)
+      if (firebaseUser.email) {
+        const emailQuery = query(usersRef, where('email', '==', firebaseUser.email));
+        const emailSnapshot = await getDocs(emailQuery);
+        if (!emailSnapshot.empty) {
+          const userDoc = emailSnapshot.docs[0];
+          const userData = userDoc.data();
+          // Backfill firebaseUid for future lookups
+          try {
+            await updateDoc(doc(db, 'users', userDoc.id), { firebaseUid: firebaseUser.uid });
+          } catch {}
+          setCurrentUser({
+            id: userData.id,
+            email: userData.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            address: userData.address,
+            nic: userData.nic,
+            phoneNumber: userData.phoneNumber,
+            role: userData.role,
+            communityId: userData.communityId,
+            profileImage: userData.profileImage,
+            createdAt: userData.createdAt?.toDate(),
+          });
+          return;
+        }
+      }
+
+      // If still not found, create a minimal user document to unblock login
+      const minimalId = firebaseUser.uid;
+      const minimalUser = {
+        id: minimalId,
+        email: firebaseUser.email || '',
+        firstName: (firebaseUser.displayName || '').split(' ')[0] || 'User',
+        lastName: (firebaseUser.displayName || '').split(' ').slice(1).join(' ') || '',
+        address: '',
+        nic: '',
+        phoneNumber: firebaseUser.phoneNumber || '',
+        role: USER_ROLES.NORMAL_USER,
+        communityId: '',
+        firebaseUid: firebaseUser.uid,
+        profileImage: '',
+        createdAt: new Date(),
+      } as AuthUser;
+
+      await setDoc(doc(db, 'users', minimalId), minimalUser);
+      setCurrentUser(minimalUser);
     } catch (error) {
       console.error('Error loading user data:', error);
     }
