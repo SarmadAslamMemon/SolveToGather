@@ -281,7 +281,7 @@ export default function Login() {
               <div className="inline-flex items-center justify-center w-16 h-16 savetogather-gradient rounded-full mb-4 shadow-lg">
                 <HandHeart className="w-8 h-8 text-primary-foreground" />
               </div>
-              <h1 className="text-3xl font-bold font-serif text-gradient mb-2">SaveToGather</h1>
+              <h1 className="text-3xl font-bold font-serif text-gradient mb-2">SolveToGather</h1>
               <p className="text-muted-foreground">Building stronger communities together</p>
             </motion.div>
 

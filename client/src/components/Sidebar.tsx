@@ -151,7 +151,7 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
             )}
           </div>
           <div>
-            <h2 className="text-xl font-bold font-serif text-gradient">SaveToGather</h2>
+            <h2 className="text-xl font-bold font-serif text-gradient">SolveToGather</h2>
             {isSuperUser && (
               <p className="text-xs text-muted-foreground">Super Admin</p>
             )}
