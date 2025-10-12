@@ -12,6 +12,7 @@ import UserRoleConfirmationModal from './UserRoleConfirmationModal';
 import Notifications from './Notifications';
 import CreateIssueModal from './CreateIssueModal';
 import CreateCampaignModal from './CreateCampaignModal';
+import ReportsList from '@/components/views/ReportsList';
 
 interface MainContentProps {
   currentView: string;
@@ -138,11 +139,6 @@ export default function MainContent({ currentView }: MainContentProps) {
 
   // Super User gets special interface
   if (isSuperUser) {
-    // Super users use AdminPanel for create-issue and create-campaign
-    if (currentView === 'create-issue' || currentView === 'create-campaign') {
-      return <AdminPanel currentView={currentView} />;
-    }
-    
     return (
       <>
         <SuperUserPanel currentView={currentView} onUserRoleChange={handleUserRoleChange} onRefreshUsers={refreshUsersRef} />
@@ -160,8 +156,10 @@ export default function MainContent({ currentView }: MainContentProps) {
   // Community Leader in leader mode gets admin panel for admin views
   if (isCommunityLeader && effectiveRole === 'leader' && (
     currentView === 'admin-dashboard' ||
+    currentView === 'admin-activity' ||
     currentView === 'admin-issues' ||
     currentView === 'admin-campaigns' ||
+    currentView === 'admin-reports' ||
     currentView === 'create-issue' ||
     currentView === 'create-campaign' ||
     currentView === 'manage-communities' ||
@@ -174,6 +172,14 @@ export default function MainContent({ currentView }: MainContentProps) {
   // Notifications view is available for all roles
   if (currentView === 'notifications') {
     return <Notifications />;
+  }
+
+  // Reports views
+  if (currentView === 'reports' && isSuperUser) {
+    return <ReportsList mode="super" />;
+  }
+  if (currentView === 'admin-reports' && isCommunityLeader && effectiveRole === 'leader') {
+    return <ReportsList mode="leader" />;
   }
 
   // Normal user/member views

@@ -14,7 +14,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/communities', async (req, res) => {
     try {
       const communities = await storage.getAllCommunities();
-      res.json(communities);
+      const users = await storage.getAllUsers();
+      
+      // Enrich communities with actual member count and leader name
+      const enrichedCommunities = await Promise.all(
+        communities.map(async (community) => {
+          // Calculate actual member count
+          const actualMemberCount = users.filter(u => u.communityId === community.id).length;
+          
+          // Get leader name if exists
+          let leaderName = null;
+          if (community.leaderId) {
+            const leader = users.find(u => u.id === community.leaderId);
+            if (leader) {
+              leaderName = `${leader.firstName} ${leader.lastName}`;
+            }
+          }
+          
+          return {
+            ...community,
+            memberCount: actualMemberCount,
+            leaderName,
+          };
+        })
+      );
+      
+      res.json(enrichedCommunities);
     } catch (error) {
       console.error('Error fetching communities:', error);
       res.status(500).json({ error: 'Failed to fetch communities' });
@@ -74,10 +99,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/communities/:id', async (req, res) => {
     try {
       const { id } = req.params;
+      console.log(`🗑️  Deleting community with ID: ${id}`);
+      
+      // Check if community exists
+      const community = await storage.getCommunity(id);
+      if (!community) {
+        console.log(`❌ Community not found: ${id}`);
+        return res.status(404).json({ error: 'Community not found' });
+      }
+      
+      console.log(`✅ Found community: ${community.name}`);
       await storage.deleteCommunity(id);
+      console.log(`✅ Successfully deleted community: ${id}`);
+      
       res.status(204).send();
     } catch (error) {
-      console.error('Error deleting community:', error);
+      console.error('❌ Error deleting community:', error);
       res.status(500).json({ error: 'Failed to delete community' });
     }
   });

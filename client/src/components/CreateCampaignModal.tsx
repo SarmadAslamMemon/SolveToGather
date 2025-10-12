@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { createCampaign, uploadFile } from '@/services/firebase';
+import { createCampaign, createCampaignWithNotification, uploadFile } from '@/services/firebase';
 
 interface CreateCampaignModalProps {
   isOpen: boolean;
@@ -52,7 +52,7 @@ export default function CreateCampaignModal({ isOpen, onClose }: CreateCampaignM
         imageUrls.push(url);
       }
 
-      await createCampaign({
+      await createCampaignWithNotification({
         title: title.trim(),
         description: description.trim(),
         goal: Number(goal),

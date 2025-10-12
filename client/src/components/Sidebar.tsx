@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { uploadFile, updateUserProfileImage } from '@/services/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { useNotificationContext } from '@/contexts/NotificationContext';
 import { 
   HandHeart, 
   Home, 
@@ -22,7 +23,9 @@ import {
   Crown,
   Heart,
   Megaphone,
-  Newspaper
+  Newspaper,
+  Flag,
+  TrendingUp
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,10 +34,11 @@ interface SidebarProps {
   notificationCount?: number;
 }
 
-export default function Sidebar({ currentView, onViewChange, notificationCount = 0 }: SidebarProps) {
+export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
   const { currentUser, logout, selectedRole, setSelectedRole } = useAuth();
   const { toast } = useToast();
   const [uploadingImage, setUploadingImage] = useState(false);
+  const { unreadCount: notificationCount } = useNotificationContext();
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -87,21 +91,20 @@ export default function Sidebar({ currentView, onViewChange, notificationCount =
   const getMenuItems = () => {
     if (isSuperUser) {
       return [
-        { id: 'super-dashboard', label: 'Super Dashboard', icon: Crown },
         { id: 'communities', label: 'All Communities', icon: Users },
         { id: 'campaigns', label: 'All Campaigns', icon: DollarSign },
         { id: 'issues', label: 'All Issues', icon: AlertTriangle },
-        { id: 'users', label: 'Manage Users', icon: Crown },
-        { id: 'create-issue', label: 'Add Issue', icon: Plus },
-        { id: 'create-campaign', label: 'Raise Campaign', icon: Megaphone },
+        { id: 'users', label: 'Manage Users', icon: Crown }
       ];
     }
 
     if (isAdmin) {
       return [
         { id: 'admin-dashboard', label: 'Statistics', icon: BarChart3 },
+        { id: 'admin-activity', label: 'Activity & Insights', icon: TrendingUp },
         { id: 'admin-issues', label: 'All Issues', icon: AlertTriangle },
         { id: 'admin-campaigns', label: 'All Campaigns', icon: DollarSign },
+        { id: 'admin-reports', label: 'Reports', icon: Flag },
         { id: 'create-issue', label: 'Add Issue', icon: Plus },
         { id: 'create-campaign', label: 'Raise Campaign', icon: Megaphone },
       ];

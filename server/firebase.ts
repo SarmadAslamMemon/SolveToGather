@@ -1,20 +1,57 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, getDoc, query, where, limit, setDoc } from 'firebase/firestore';
+import { initializeApp, applicationDefault, cert, getApps, getApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { readFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyDhQZhmelEU5SeV4trChALR_ei0TyCkpFo",
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "savetogather-19574.firebaseapp.com",
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID || "savetogather-19574",
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "savetogather-19574.firebasestorage.app",
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "986993003813",
-  appId: process.env.VITE_FIREBASE_APP_ID || "1:986993003813:web:7b4dc10bffb0d8e26ddecc",
-  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || "G-WM7FRZ6XC4",
-};
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+// Initialize Firebase Admin SDK
+function initializeAdmin() {
+  if (getApps().length > 0) return getApp();
+
+  const projectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || 'savetogather-19574';
+
+  const svcJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+  const svcJsonB64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+
+  try {
+    if (svcJson || svcJsonB64) {
+      const jsonStr = svcJson || Buffer.from(svcJsonB64 as string, 'base64').toString('utf8');
+      const credentials = JSON.parse(jsonStr);
+      return initializeApp({
+        credential: cert(credentials),
+        projectId,
+      });
+    }
+
+    // Try to load from local serviceAccount.json file
+    const localServiceAccountPath = join(__dirname, 'secrets', 'serviceAccount.json');
+    if (existsSync(localServiceAccountPath)) {
+      console.log('Loading service account from local file:', localServiceAccountPath);
+      const serviceAccountJson = readFileSync(localServiceAccountPath, 'utf8');
+      const credentials = JSON.parse(serviceAccountJson);
+      return initializeApp({
+        credential: cert(credentials),
+        projectId,
+      });
+    }
+
+    // Fallback to ADC (gcloud/emulator)
+    return initializeApp({
+      credential: applicationDefault(),
+      projectId,
+    });
+  } catch (e) {
+    console.error('Error initializing Firebase Admin:', e);
+    // Final fallback for emulator without creds
+    return initializeApp({ projectId });
+  }
+}
+
+initializeAdmin();
+export const db = getFirestore();
 
 // Firebase Firestore Collections
 export const COLLECTIONS = {
@@ -25,7 +62,9 @@ export const COLLECTIONS = {
   DONATIONS: 'donations',
   LIKES: 'likes',
   COMMENTS: 'comments',
+  NOTIFICATIONS: 'notifications',
   SYSTEM: 'system',
+  REPORTS: 'reports',
 } as const;
 
 // Database Schema Types
@@ -117,257 +156,37 @@ export interface FirebaseComment {
 export async function initializeDatabase() {
   try {
     console.log('Initializing Firebase database...');
-    
     // Check if database has any data by looking at communities collection
-    const communitiesRef = collection(db, COLLECTIONS.COMMUNITIES);
-    const communitiesSnapshot = await getDocs(communitiesRef);
-    
+    const communitiesSnapshot = await db.collection(COLLECTIONS.COMMUNITIES).limit(1).get();
     if (communitiesSnapshot.empty) {
       console.log('Database is empty, collections will be created when first documents are added');
     } else {
-      console.log(`Database initialized - found ${communitiesSnapshot.size} communities`);
+      console.log(`Database initialized - found ${communitiesSnapshot.size} communities (sample)`);
     }
     
     console.log('Firebase database initialized successfully!');
   } catch (error) {
     console.error('Error initializing database:', error);
-    throw error;
+    // With Admin SDK, this should rarely fail; continue without crashing
   }
 }
 
 // Sample data for testing
-export const sampleData = {
+export const sampleData: {
+  communities: any[];
+  users: any[];
+  issues: any[];
+} = {
   communities: [
-    {
-      id: 'gulshan',
-      name: 'Gulshan-e-Iqbal',
-      description: 'A vibrant community in Karachi',
-      location: 'Karachi, Pakistan',
-      memberCount: 1247,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: 'korangi',
-      name: 'Korangi',
-      description: 'Industrial area community',
-      location: 'Karachi, Pakistan',
-      memberCount: 892,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: 'orangi',
-      name: 'Orangi Town',
-      description: 'Largest slum area in Asia',
-      location: 'Karachi, Pakistan',
-      memberCount: 567,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
+    // No static communities - super admin will create communities as needed
   ],
   
   users: [
-    {
-      email: 'yasir@gmail.com',
-      firstName: 'Yasir',
-      lastName: 'Admin',
-      address: 'Karachi, Pakistan',
-      nic: '12345-1234567-1',
-      phoneNumber: '+92-300-1234567',
-      role: 'super_user' as const,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      email: 'ahmed@example.com',
-      firstName: 'Ahmed',
-      lastName: 'Khan',
-      address: 'Gulshan-e-Iqbal, Karachi',
-      nic: '12345-1234567-2',
-      phoneNumber: '+92-300-1234568',
-      role: 'community_leader' as const,
-      communityId: 'gulshan',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      email: 'fatima@example.com',
-      firstName: 'Fatima',
-      lastName: 'Ali',
-      address: 'Korangi, Karachi',
-      nic: '12345-1234567-3',
-      phoneNumber: '+92-300-1234569',
-      role: 'community_leader' as const,
-      communityId: 'korangi',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      email: 'hassan@example.com',
-      firstName: 'Hassan',
-      lastName: 'Ahmed',
-      address: 'Orangi Town, Karachi',
-      nic: '12345-1234567-4',
-      phoneNumber: '+92-300-1234570',
-      role: 'community_leader' as const,
-      communityId: 'orangi',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    // Normal users for testing
-    {
-      email: 'sara@example.com',
-      firstName: 'Sara',
-      lastName: 'Khan',
-      address: 'Gulshan-e-Iqbal, Karachi',
-      nic: '12345-1234567-5',
-      phoneNumber: '+92-300-1234571',
-      role: 'normal_user' as const,
-      communityId: 'gulshan',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      email: 'ali@example.com',
-      firstName: 'Ali',
-      lastName: 'Hassan',
-      address: 'Korangi, Karachi',
-      nic: '12345-1234567-6',
-      phoneNumber: '+92-300-1234572',
-      role: 'normal_user' as const,
-      communityId: 'korangi',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      email: 'amina@example.com',
-      firstName: 'Amina',
-      lastName: 'Malik',
-      address: 'Orangi Town, Karachi',
-      nic: '12345-1234567-7',
-      phoneNumber: '+92-300-1234573',
-      role: 'normal_user' as const,
-      communityId: 'orangi',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
+    // No static users - they will register through the application
   ],
   
   issues: [
-    // Gulshan-e-Iqbal Community Issues
-    {
-      title: 'Street Lighting Problem in Block 6',
-      description: 'Several street lights in Block 6 have been non-functional for over a month, making it unsafe for residents to walk at night. This is particularly concerning for women and children.',
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500',
-      likes: 23,
-      comments: 8,
-      communityId: 'gulshan',
-      authorId: 'ahmed-khan',
-      status: 'pending' as const,
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    },
-    {
-      title: 'Garbage Collection Delays',
-      description: 'Garbage collection has been inconsistent in our area for the past two weeks. Piles of garbage are accumulating, creating health hazards and unpleasant odors.',
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500',
-      likes: 45,
-      comments: 12,
-      communityId: 'gulshan',
-      authorId: 'ahmed-khan',
-      status: 'in-progress' as const,
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-    },
-    {
-      title: 'Water Supply Shortage',
-      description: 'Residents in Block 2 and 3 are experiencing severe water shortage. Water pressure is extremely low, and many households are without water for hours.',
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500',
-      likes: 67,
-      comments: 19,
-      communityId: 'gulshan',
-      authorId: 'ahmed-khan',
-      status: 'pending' as const,
-      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-      updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    },
-    
-    // Korangi Community Issues
-    {
-      title: 'Industrial Pollution Concerns',
-      description: 'Local factories are releasing harmful emissions that are affecting air quality in residential areas. Residents are experiencing respiratory problems.',
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500',
-      likes: 89,
-      comments: 25,
-      communityId: 'korangi',
-      authorId: 'fatima-ali',
-      status: 'in-progress' as const,
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
-      updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-    },
-    {
-      title: 'Road Repair Needed - Sector 31',
-      description: 'The main road in Sector 31 has multiple potholes and damaged sections. This is causing traffic congestion and vehicle damage.',
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500',
-      likes: 34,
-      comments: 7,
-      communityId: 'korangi',
-      authorId: 'fatima-ali',
-      status: 'pending' as const,
-      createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
-      updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    },
-    {
-      title: 'Sewage System Overflow',
-      description: 'Sewage system in Sector 25 is overflowing, creating health hazards and unpleasant conditions for residents. Immediate action is required.',
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500',
-      likes: 56,
-      comments: 15,
-      communityId: 'korangi',
-      authorId: 'fatima-ali',
-      status: 'resolved' as const,
-      createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
-      updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-    },
-    
-    // Orangi Town Community Issues
-    {
-      title: 'Lack of Proper Drainage System',
-      description: 'During monsoon season, water accumulates in streets and homes due to inadequate drainage. This causes property damage and health risks.',
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500',
-      likes: 78,
-      comments: 22,
-      communityId: 'orangi',
-      authorId: 'hassan-ahmed',
-      status: 'pending' as const,
-      createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), // 6 days ago
-      updatedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-    },
-    {
-      title: 'Electricity Load Shedding Issues',
-      description: 'Frequent power outages lasting 8-10 hours daily are affecting daily life, especially for students and small businesses.',
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500',
-      likes: 92,
-      comments: 28,
-      communityId: 'orangi',
-      authorId: 'hassan-ahmed',
-      status: 'in-progress' as const,
-      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000), // 8 days ago
-      updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-    },
-    {
-      title: 'Access to Clean Drinking Water',
-      description: 'Many households in Orangi Town do not have access to clean drinking water. Residents are forced to buy expensive bottled water.',
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500',
-      likes: 101,
-      comments: 31,
-      communityId: 'orangi',
-      authorId: 'hassan-ahmed',
-      status: 'pending' as const,
-      createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000), // 12 days ago
-      updatedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-    },
+    // No static issues - users will create issues through the application
   ],
 };
 
@@ -375,18 +194,17 @@ export const sampleData = {
 async function isDatabaseSeeded(): Promise<boolean> {
   try {
     // Check for a seeding status document
-    const seedingStatusRef = doc(db, COLLECTIONS.SYSTEM, 'seeding-status');
-    const seedingStatusDoc = await getDoc(seedingStatusRef);
-    
-    if (seedingStatusDoc.exists()) {
+    const seedingStatusRef = db.collection(COLLECTIONS.SYSTEM).doc('seeding-status');
+    const seedingStatusDoc = await seedingStatusRef.get();
+    if (seedingStatusDoc.exists) {
       const status = seedingStatusDoc.data();
       return status?.seeded === true && status?.version === '1.0';
     }
     
     // Fallback: check if collections have data
-    const communitiesSnapshot = await getDocs(collection(db, COLLECTIONS.COMMUNITIES));
-    const usersSnapshot = await getDocs(collection(db, COLLECTIONS.USERS));
-    const issuesSnapshot = await getDocs(collection(db, COLLECTIONS.ISSUES));
+    const communitiesSnapshot = await db.collection(COLLECTIONS.COMMUNITIES).limit(1).get();
+    const usersSnapshot = await db.collection(COLLECTIONS.USERS).limit(1).get();
+    const issuesSnapshot = await db.collection(COLLECTIONS.ISSUES).limit(1).get();
     
     return !communitiesSnapshot.empty || !usersSnapshot.empty || !issuesSnapshot.empty;
   } catch (error) {
@@ -398,8 +216,8 @@ async function isDatabaseSeeded(): Promise<boolean> {
 // Function to mark database as seeded
 async function markDatabaseAsSeeded(): Promise<void> {
   try {
-    const seedingStatusRef = doc(db, COLLECTIONS.SYSTEM, 'seeding-status');
-    await setDoc(seedingStatusRef, {
+    const seedingStatusRef = db.collection(COLLECTIONS.SYSTEM).doc('seeding-status');
+    await seedingStatusRef.set({
       seeded: true,
       version: '1.0',
       seededAt: new Date().toISOString(),
@@ -427,35 +245,47 @@ export async function seedDatabase() {
     console.log('🌱 Seeding database with sample data...');
     
     // Add sample communities with specific IDs
+    if (sampleData.communities.length > 0) {
     for (const community of sampleData.communities) {
-      await setDoc(doc(db, COLLECTIONS.COMMUNITIES, community.id), {
+      await db.collection(COLLECTIONS.COMMUNITIES).doc(community.id).set({
         ...community,
       });
       console.log(`✅ Added community: ${community.name} with ID: ${community.id}`);
+      }
+    } else {
+      console.log('ℹ️  No sample communities to seed');
     }
     
     // Add sample users
+    if (sampleData.users.length > 0) {
     for (const user of sampleData.users) {
-      const docRef = await addDoc(collection(db, COLLECTIONS.USERS), {
+      const docRef = await db.collection(COLLECTIONS.USERS).add({
         ...user,
       });
       console.log(`✅ Added user: ${user.email} with ID: ${docRef.id}`);
+      }
+    } else {
+      console.log('ℹ️  No sample users to seed');
     }
     
     // Add sample issues
+    if (sampleData.issues.length > 0) {
     for (const issue of sampleData.issues) {
-      const docRef = await addDoc(collection(db, COLLECTIONS.ISSUES), {
+      const docRef = await db.collection(COLLECTIONS.ISSUES).add({
         ...issue,
       });
       console.log(`✅ Added issue: ${issue.title} with ID: ${docRef.id}`);
+      }
+    } else {
+      console.log('ℹ️  No sample issues to seed');
     }
     
     // Mark database as seeded
     await markDatabaseAsSeeded();
     
-    console.log('🎉 Database seeded successfully!');
+    console.log('🎉 Database seeding completed - ready for use!');
   } catch (error) {
     console.error('❌ Error seeding database:', error);
-    throw error;
+    // With Admin SDK, this should not be due to rules; continue without crashing
   }
 }

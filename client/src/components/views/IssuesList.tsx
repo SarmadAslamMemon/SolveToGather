@@ -15,10 +15,15 @@ import { useToast } from '@/hooks/use-toast';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-export default function IssuesList() {
+interface IssuesListProps {
+  superAdminMode?: boolean;
+}
+
+export default function IssuesList({ superAdminMode = false }: IssuesListProps) {
   const { currentUser } = useAuth();
   const { toast } = useToast();
-  const { issues, loading } = useIssues(currentUser?.communityId, true);
+  // For super admin, pass undefined to fetch all issues regardless of community
+  const { issues, loading } = useIssues(superAdminMode ? undefined : currentUser?.communityId, true);
   const [openIssue, setOpenIssue] = useState<any | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
   const [newComment, setNewComment] = useState('');
@@ -97,18 +102,20 @@ export default function IssuesList() {
   }
 
   return (
-    <div className="ml-64 p-6">
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="mb-6"
-      >
-        <h1 className="text-3xl font-bold text-gradient">Issues</h1>
-        <p className="text-muted-foreground">All issues from your community</p>
-      </motion.header>
+    <div className={superAdminMode ? 'p-0' : 'ml-64 p-6'}>
+      {!superAdminMode && (
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-6"
+        >
+          <h1 className="text-3xl font-bold text-gradient">Issues</h1>
+          <p className="text-muted-foreground">All issues from your community</p>
+        </motion.header>
+      )}
 
-      <div className="space-y-6 max-w-2xl">
+      <div className="space-y-6 max-w-2xl mx-auto">
         {issues.length === 0 ? (
           <Card className="bg-card border-border">
             <CardContent className="p-8 text-center">

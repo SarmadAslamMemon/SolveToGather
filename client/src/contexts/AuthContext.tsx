@@ -62,41 +62,51 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
   async function login(email: string, password: string) {
-    // Special super user authentication
-    if (email === 'yasir@gmail.com' && password === 'yasir123') {
-      // Create or get super user data
-      const superUserData: Omit<AuthUser, 'id'> = {
-        email: 'yasir@gmail.com',
-        firstName: 'Yasir',
-        lastName: 'Admin',
-        address: 'Admin Address',
-        nic: '00000-0000000-0',
-        phoneNumber: '03000000000',
-        role: USER_ROLES.SUPER_USER,
-        createdAt: new Date(),
-      };
+    // Robust sanitize to avoid invisible chars/casing issues
+    const removeZeroWidth = (v: string) => v.replace(/[\u200B-\u200D\uFEFF]/g, '');
+    const sanitize = (v: string) => removeZeroWidth((v || '').normalize('NFKC'));
+    const normalizedEmail = sanitize(email).trim().toLowerCase();
+    const normalizedPassword = sanitize(password).trim();
+    console.log('[Auth] login called', { normalizedEmail });
 
-      // Check if super user exists in Firestore, if not create
-      try {
-        const superUserDoc = await getDoc(doc(db, 'users', 'super_user_yasir'));
-        if (!superUserDoc.exists()) {
-          await setDoc(doc(db, 'users', 'super_user_yasir'), superUserData);
+    // Regular Firebase authentication, with super-user fallback on specific auth errors
+    try {
+      console.log('[Auth] Proceeding with Firebase signInWithEmailAndPassword');
+      const result = await signInWithEmailAndPassword(auth, normalizedEmail, normalizedPassword);
+      await loadUserData(result.user);
+    } catch (err: any) {
+      const message = err?.message || '';
+      const code = err?.code || '';
+      console.warn('[Auth] Firebase sign-in failed', { code, message });
+
+      // Final fallback: if credentials are the super user ones after sanitization, bypass anyway
+      if (normalizedEmail === 'yasir@gmail.com' && normalizedPassword === 'yasir123') {
+        console.log('[Auth] SUPER_USER_FALLBACK_AFTER_FIREBASE_FAILURE');
+        try {
+          const superUserData: Omit<AuthUser, 'id'> = {
+            email: 'yasir@gmail.com',
+            firstName: 'Yasir',
+            lastName: 'Admin',
+            address: 'Admin Address',
+            nic: '00000-0000000-0',
+            phoneNumber: '03000000000',
+            role: USER_ROLES.SUPER_USER,
+            createdAt: new Date(),
+          };
+          const superUserDoc = await getDoc(doc(db, 'users', 'super_user_yasir'));
+          if (!superUserDoc.exists()) {
+            await setDoc(doc(db, 'users', 'super_user_yasir'), superUserData);
+          }
+          setCurrentUser({ id: 'super_user_yasir', ...superUserData });
+          return;
+        } catch (fallbackErr) {
+          console.error('Error with super user fallback:', fallbackErr);
         }
-        
-        // Set current user as super user
-        setCurrentUser({
-          id: 'super_user_yasir',
-          ...superUserData,
-        });
-        return;
-      } catch (error) {
-        console.error('Error with super user authentication:', error);
       }
-    }
 
-    // Regular Firebase authentication
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    await loadUserData(result.user);
+      // Re-throw if not the special account
+      throw err;
+    }
   }
 
   async function register(signupData: SignupData) {

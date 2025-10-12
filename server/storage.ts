@@ -26,13 +26,13 @@ export class FirebaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     try {
-      const docRef = doc(db, COLLECTIONS.USERS, id);
-      const docSnap = await getDoc(docRef);
+      const docRef = db.collection(COLLECTIONS.USERS).doc(id);
+      const docSnap = await docRef.get();
       
-      if (docSnap.exists()) {
+      if (docSnap.exists) {
         const data = docSnap.data() as FirebaseUser;
         return {
-          id: docSnap.id, // Use document ID from Firestore
+          id: docSnap.id,
           email: data.email,
           firstName: data.firstName,
           lastName: data.lastName,
@@ -40,8 +40,8 @@ export class FirebaseStorage implements IStorage {
           nic: data.nic,
           phoneNumber: data.phoneNumber,
           role: data.role,
-          communityId: data.communityId || null,
-          profileImage: data.profileImage || null,
+          communityId: (data as any).communityId || null,
+          profileImage: (data as any).profileImage || null,
           createdAt: data.createdAt,
         };
       }
@@ -54,18 +54,16 @@ export class FirebaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      const q = query(
-        collection(db, COLLECTIONS.USERS),
-        where('email', '==', username),
-        limit(1)
-      );
-      const snapshot = await getDocs(q);
+      const snapshot = await db.collection(COLLECTIONS.USERS)
+        .where('email', '==', username)
+        .limit(1)
+        .get();
       
       if (!snapshot.empty) {
         const docSnap = snapshot.docs[0];
         const data = docSnap.data() as FirebaseUser;
         return {
-          id: docSnap.id, // Use document ID from Firestore
+          id: docSnap.id,
           email: data.email,
           firstName: data.firstName,
           lastName: data.lastName,
@@ -73,8 +71,8 @@ export class FirebaseStorage implements IStorage {
           nic: data.nic,
           phoneNumber: data.phoneNumber,
           role: data.role,
-          communityId: data.communityId || null,
-          profileImage: data.profileImage || null,
+          communityId: (data as any).communityId || null,
+          profileImage: (data as any).profileImage || null,
           createdAt: data.createdAt,
         };
       }
@@ -87,11 +85,11 @@ export class FirebaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     try {
-      const snapshot = await getDocs(collection(db, COLLECTIONS.USERS));
+      const snapshot = await db.collection(COLLECTIONS.USERS).get();
       return snapshot.docs.map(docSnap => {
         const data = docSnap.data() as FirebaseUser;
         return {
-          id: docSnap.id, // Use document ID from Firestore
+          id: docSnap.id,
           email: data.email,
           firstName: data.firstName,
           lastName: data.lastName,
@@ -99,8 +97,8 @@ export class FirebaseStorage implements IStorage {
           nic: data.nic,
           phoneNumber: data.phoneNumber,
           role: data.role,
-          communityId: data.communityId || null,
-          profileImage: data.profileImage || null,
+          communityId: (data as any).communityId || null,
+          profileImage: (data as any).profileImage || null,
           createdAt: data.createdAt,
         };
       });
@@ -119,9 +117,9 @@ export class FirebaseStorage implements IStorage {
         id,
         createdAt: now,
         updatedAt: now,
-      };
+      } as any;
       
-      const docRef = await addDoc(collection(db, COLLECTIONS.USERS), user);
+      const docRef = await db.collection(COLLECTIONS.USERS).add(user as any);
       
       return {
         id: user.id,
@@ -132,8 +130,8 @@ export class FirebaseStorage implements IStorage {
         nic: user.nic,
         phoneNumber: user.phoneNumber,
         role: user.role,
-        communityId: user.communityId || null,
-        profileImage: user.profileImage || null,
+        communityId: (user as any).communityId || null,
+        profileImage: (user as any).profileImage || null,
         createdAt: user.createdAt,
       };
     } catch (error) {
@@ -144,25 +142,23 @@ export class FirebaseStorage implements IStorage {
 
   async updateUser(id: string, updates: Partial<User>): Promise<User> {
     try {
-      const docRef = doc(db, COLLECTIONS.USERS, id);
+      const docRef = db.collection(COLLECTIONS.USERS).doc(id);
       
-      // Prepare update data with updatedAt timestamp
       const updateData = {
         ...updates,
         updatedAt: new Date(),
-      };
+      } as any;
       
-      await updateDoc(docRef, updateData);
+      await docRef.update(updateData);
       
-      // Get the updated user data
-      const updatedDoc = await getDoc(docRef);
-      if (!updatedDoc.exists()) {
+      const updatedDoc = await docRef.get();
+      if (!updatedDoc.exists) {
         throw new Error('User not found after update');
       }
       
       const data = updatedDoc.data() as FirebaseUser;
       return {
-        id: updatedDoc.id, // Use document ID from Firestore
+        id: updatedDoc.id,
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
@@ -170,8 +166,8 @@ export class FirebaseStorage implements IStorage {
         nic: data.nic,
         phoneNumber: data.phoneNumber,
         role: data.role,
-        communityId: data.communityId || null,
-        profileImage: data.profileImage || null,
+        communityId: (data as any).communityId || null,
+        profileImage: (data as any).profileImage || null,
         createdAt: data.createdAt,
       };
     } catch (error) {
@@ -183,17 +179,19 @@ export class FirebaseStorage implements IStorage {
   // Community operations
   async getCommunity(id: string): Promise<Community | undefined> {
     try {
-      const docRef = doc(db, COLLECTIONS.COMMUNITIES, id);
-      const docSnap = await getDoc(docRef);
+      const docRef = db.collection(COLLECTIONS.COMMUNITIES).doc(id);
+      const docSnap = await docRef.get();
       
-      if (docSnap.exists()) {
+      if (docSnap.exists) {
         const data = docSnap.data() as FirebaseCommunity;
+        // Use document ID as the source of truth, but prefer data.id if it exists
+        const communityId = data.id || docSnap.id;
         return {
-          id: data.id,
+          id: communityId,
           name: data.name,
-          description: data.description || null,
-          location: data.location || null,
-          leaderId: data.leaderId || null,
+          description: (data as any).description || null,
+          location: (data as any).location || null,
+          leaderId: (data as any).leaderId || null,
           memberCount: data.memberCount,
           createdAt: data.createdAt,
         };
@@ -207,21 +205,25 @@ export class FirebaseStorage implements IStorage {
 
   async getAllCommunities(): Promise<Community[]> {
     try {
-      const snapshot = await getDocs(collection(db, COLLECTIONS.COMMUNITIES));
-      return snapshot.docs.map(docSnap => {
+      const snapshot = await db.collection(COLLECTIONS.COMMUNITIES).get();
+      const communities = snapshot.docs.map(docSnap => {
         const data = docSnap.data() as FirebaseCommunity;
+        // Use document ID as the source of truth, but prefer data.id if it exists
+        const communityId = data.id || docSnap.id;
         return {
-          id: data.id,
+          id: communityId,
           name: data.name,
-          description: data.description || null,
-          location: data.location || null,
-          leaderId: data.leaderId || null,
+          description: (data as any).description || null,
+          location: (data as any).location || null,
+          leaderId: (data as any).leaderId || null,
           memberCount: data.memberCount,
           createdAt: data.createdAt,
         };
       });
+      console.log(`✅ Fetched ${communities.length} communities from Firestore`);
+      return communities;
     } catch (error) {
-      console.error('Error getting all communities:', error);
+      console.error('❌ Error getting all communities:', error);
       return [];
     }
   }
@@ -229,8 +231,6 @@ export class FirebaseStorage implements IStorage {
   async createCommunity(community: InsertCommunity): Promise<Community> {
     try {
       const now = new Date();
-      
-      // Generate a custom ID based on the community name (like the seeded data)
       const customId = community.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
       
       const newCommunity: FirebaseCommunity = {
@@ -239,18 +239,16 @@ export class FirebaseStorage implements IStorage {
         memberCount: 0,
         createdAt: now,
         updatedAt: now,
-      };
+      } as any;
       
-      // Use setDoc with custom ID instead of addDoc with random ID
-      const docRef = doc(db, COLLECTIONS.COMMUNITIES, customId);
-      await setDoc(docRef, newCommunity);
+      await db.collection(COLLECTIONS.COMMUNITIES).doc(customId).set(newCommunity as any);
       
       return {
         id: newCommunity.id,
         name: newCommunity.name,
-        description: newCommunity.description || null,
-        location: newCommunity.location || null,
-        leaderId: newCommunity.leaderId || null,
+        description: (newCommunity as any).description || null,
+        location: (newCommunity as any).location || null,
+        leaderId: (newCommunity as any).leaderId || null,
         memberCount: newCommunity.memberCount,
         createdAt: newCommunity.createdAt,
       };
@@ -262,24 +260,26 @@ export class FirebaseStorage implements IStorage {
 
   async updateCommunity(id: string, updates: Partial<Community>): Promise<Community> {
     try {
-      const docRef = doc(db, COLLECTIONS.COMMUNITIES, id);
+      const docRef = db.collection(COLLECTIONS.COMMUNITIES).doc(id);
       const updateData = {
         ...updates,
         updatedAt: new Date(),
-      };
+      } as any;
       
-      await updateDoc(docRef, updateData);
+      await docRef.update(updateData);
       
-      const updatedDoc = await getDoc(docRef);
-      if (updatedDoc.exists()) {
+      const updatedDoc = await docRef.get();
+      if (updatedDoc.exists) {
         const data = updatedDoc.data() as FirebaseCommunity;
         return {
           id: data.id,
           name: data.name,
-          leaderId: data.leaderId || null,
-          memberCount: data.memberCount,
-          createdAt: data.createdAt,
-        };
+          description: (data as any).description || null,
+          location: (data as any).location || null,
+          leaderId: (data as any).leaderId || null,
+          memberCount: (data as any).memberCount ?? null,
+          createdAt: (data as any).createdAt ?? null,
+        } as Community;
       }
       throw new Error('Community not found');
     } catch (error) {
@@ -290,8 +290,7 @@ export class FirebaseStorage implements IStorage {
 
   async deleteCommunity(id: string): Promise<void> {
     try {
-      const docRef = doc(db, COLLECTIONS.COMMUNITIES, id);
-      await deleteDoc(docRef);
+      await db.collection(COLLECTIONS.COMMUNITIES).doc(id).delete();
     } catch (error) {
       console.error('Error deleting community:', error);
       throw error;
@@ -300,11 +299,10 @@ export class FirebaseStorage implements IStorage {
 
   async assignLeaderToCommunity(communityId: string, leaderId: string): Promise<void> {
     try {
-      const docRef = doc(db, COLLECTIONS.COMMUNITIES, communityId);
-      await updateDoc(docRef, {
-        leaderId: leaderId,
+      await db.collection(COLLECTIONS.COMMUNITIES).doc(communityId).update({
+        leaderId,
         updatedAt: new Date(),
-      });
+      } as any);
     } catch (error) {
       console.error('Error assigning leader to community:', error);
       throw error;
@@ -313,11 +311,10 @@ export class FirebaseStorage implements IStorage {
 
   async removeLeaderFromCommunity(communityId: string): Promise<void> {
     try {
-      const docRef = doc(db, COLLECTIONS.COMMUNITIES, communityId);
-      await updateDoc(docRef, {
+      await db.collection(COLLECTIONS.COMMUNITIES).doc(communityId).update({
         leaderId: null,
         updatedAt: new Date(),
-      });
+      } as any);
     } catch (error) {
       console.error('Error removing leader from community:', error);
       throw error;

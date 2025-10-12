@@ -8,9 +8,14 @@ import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { DollarSign } from 'lucide-react';
 
-export default function CampaignsList() {
+interface CampaignsListProps {
+  superAdminMode?: boolean;
+}
+
+export default function CampaignsList({ superAdminMode = false }: CampaignsListProps) {
   const { currentUser } = useAuth();
-  const { campaigns, loading } = useCampaigns(currentUser?.communityId, true);
+  // For super admin, pass undefined to fetch all campaigns regardless of community
+  const { campaigns, loading } = useCampaigns(superAdminMode ? undefined : currentUser?.communityId, true);
   const [selectedCampaign, setSelectedCampaign] = useState<any | null>(null);
   const [isDonationOpen, setIsDonationOpen] = useState(false);
 
@@ -19,16 +24,18 @@ export default function CampaignsList() {
   }
 
   return (
-    <div className="ml-64 p-6">
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="mb-6"
-      >
-        <h1 className="text-3xl font-bold text-gradient">Campaigns</h1>
-        <p className="text-muted-foreground">Active fundraising campaigns</p>
-      </motion.header>
+    <div className={superAdminMode ? 'p-0' : 'ml-64 p-6'}>
+      {!superAdminMode && (
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-6"
+        >
+          <h1 className="text-3xl font-bold text-gradient">Campaigns</h1>
+          <p className="text-muted-foreground">Active fundraising campaigns</p>
+        </motion.header>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {campaigns.length === 0 ? (

@@ -67,10 +67,22 @@ export default function Login() {
     const fetchCommunities = async () => {
       setLoadingCommunities(true);
       try {
+        console.log('🔍 Fetching communities...');
         const communitiesData = await getCommunities();
+        console.log('📊 Communities fetched:', communitiesData);
+        
+        if (!communitiesData || communitiesData.length === 0) {
+          console.warn('⚠️ No communities found in database');
+          toast({
+            title: "No Communities Available",
+            description: "Please contact the administrator to create communities first.",
+            variant: "destructive",
+          });
+        }
+        
         setCommunities(communitiesData);
       } catch (error) {
-        console.error('Error fetching communities:', error);
+        console.error('❌ Error fetching communities:', error);
         toast({
           title: "Error",
           description: "Failed to load communities. Please try again.",
@@ -422,17 +434,33 @@ export default function Login() {
                       value={signupData.communityId}
                       onChange={(e) => handleSignupFieldChange('communityId', e.target.value)}
                       className={`w-full px-3 py-2 bg-input border border-border text-card-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${errors.communityId ? 'border-red-500' : ''}`}
-                      disabled={loadingCommunities}
+                      disabled={loadingCommunities || communities.length === 0}
                     >
-                      <option value="">Choose your community...</option>
+                      <option value="">
+                        {loadingCommunities 
+                          ? 'Loading communities...' 
+                          : communities.length === 0 
+                            ? 'No communities available' 
+                            : 'Choose your community...'}
+                      </option>
                       {communities.map((community) => (
                         <option key={community.id} value={community.id}>
-                          {community.name}
+                          {community.name} {community.location ? `(${community.location})` : ''}
                         </option>
                       ))}
                     </select>
                     {loadingCommunities && (
                       <p className="text-muted-foreground text-xs mt-1">Loading communities...</p>
+                    )}
+                    {!loadingCommunities && communities.length === 0 && (
+                      <p className="text-amber-500 text-xs mt-1">
+                        No communities available. Please contact the administrator.
+                      </p>
+                    )}
+                    {!loadingCommunities && communities.length > 0 && (
+                      <p className="text-muted-foreground text-xs mt-1">
+                        Found {communities.length} {communities.length === 1 ? 'community' : 'communities'}
+                      </p>
                     )}
                     {errors.communityId && (
                       <p className="text-red-500 text-xs mt-1">{errors.communityId}</p>

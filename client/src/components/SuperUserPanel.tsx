@@ -7,6 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import CreateCommunityModal from './CreateCommunityModal';
+import CreateIssueModal from './CreateIssueModal';
+import CreateCampaignModal from './CreateCampaignModal';
+import IssuesList from './views/IssuesList';
+import CampaignsList from './views/CampaignsList';
 import api from '@/lib/api';
 import { 
   Users, 
@@ -18,8 +22,19 @@ import {
   BarChart3,
   MapPin,
   Calendar,
-  Target
+  Target,
+  Trash2
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Community {
   id: string;
@@ -28,28 +43,6 @@ interface Community {
   leaderName?: string;
   memberCount: number;
   location: string;
-}
-
-interface Campaign {
-  id: string;
-  title: string;
-  description: string;
-  goal: number;
-  raised: number;
-  communityId: string;
-  communityName: string;
-  daysLeft: number;
-  isActive: boolean;
-}
-
-interface Issue {
-  id: string;
-  title: string;
-  description: string;
-  communityId: string;
-  communityName: string;
-  status: 'pending' | 'resolved' | 'in-progress';
-  createdAt: Date;
 }
 
 interface SuperUserPanelProps {
@@ -68,25 +61,43 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
     switch (currentView) {
       case 'communities':
         setActiveTab('communities');
+        setIsCreateIssueOpen(false);
+        setIsCreateCampaignOpen(false);
         break;
       case 'campaigns':
         setActiveTab('campaigns');
+        setIsCreateIssueOpen(false);
+        setIsCreateCampaignOpen(false);
         break;
       case 'issues':
         setActiveTab('issues');
+        setIsCreateIssueOpen(false);
+        setIsCreateCampaignOpen(false);
         break;
       case 'users':
         setActiveTab('users');
+        setIsCreateIssueOpen(false);
+        setIsCreateCampaignOpen(false);
+        break;
+      case 'create-issue':
+        setIsCreateIssueOpen(true);
+        setIsCreateCampaignOpen(false);
+        break;
+      case 'create-campaign':
+        setIsCreateCampaignOpen(true);
+        setIsCreateIssueOpen(false);
         break;
       default:
         setActiveTab('communities');
     }
   }, [currentView]);
   const [communities, setCommunities] = useState<Community[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [issues, setIssues] = useState<Issue[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateIssueOpen, setIsCreateIssueOpen] = useState(false);
+  const [isCreateCampaignOpen, setIsCreateCampaignOpen] = useState(false);
+  const [communityToDelete, setCommunityToDelete] = useState<Community | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Fetch real data from Firebase
   const fetchCommunities = async () => {
@@ -237,6 +248,59 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
     }
   };
 
+  const handleDeleteCommunity = (community: Community) => {
+    setCommunityToDelete(community);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteCommunity = async () => {
+    if (!communityToDelete) return;
+
+    console.log('🗑️  Attempting to delete community:', communityToDelete);
+
+    try {
+      const deleteUrl = api.communities.delete(communityToDelete.id);
+      console.log('🌐 DELETE URL:', deleteUrl);
+      
+      const response = await fetch(deleteUrl, {
+        method: 'DELETE',
+      });
+
+      console.log('📡 Response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('❌ Delete failed:', errorData);
+        throw new Error(errorData.error || 'Failed to delete community');
+      }
+
+      console.log('✅ Community deleted successfully');
+
+      // Refresh communities and users BEFORE showing success message
+      await Promise.all([
+        fetchCommunities(),
+        fetchUsers(),
+      ]);
+
+      console.log('✅ Data refreshed');
+
+      toast({
+        title: "Community deleted",
+        description: `${communityToDelete.name} has been deleted successfully`,
+      });
+    } catch (error) {
+      console.error('❌ Error deleting community:', error);
+      toast({
+        title: "Failed to delete community",
+        description: error instanceof Error ? error.message : "There was an error deleting the community",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setCommunityToDelete(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="ml-64 p-6">
@@ -273,13 +337,14 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
         </div>
       </motion.header>
 
-      {/* Stats Overview */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
-      >
+      {/* Stats Overview - Only show for communities and users tabs */}
+      {(activeTab === 'communities' || activeTab === 'users') && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+        >
         <Card className="bg-card border-border">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -296,23 +361,11 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-green-500" />
+                <Users className="w-6 h-6 text-green-500" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground">{campaigns.length}</span>
+              <span className="text-2xl font-bold text-card-foreground">{users.length}</span>
             </div>
-            <h3 className="font-medium text-card-foreground">Active Campaigns</h3>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-orange-500" />
-              </div>
-              <span className="text-2xl font-bold text-card-foreground">{issues.length}</span>
-            </div>
-            <h3 className="font-medium text-card-foreground">Pending Issues</h3>
+            <h3 className="font-medium text-card-foreground">Total Users</h3>
           </CardContent>
         </Card>
 
@@ -327,9 +380,8 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
             <h3 className="font-medium text-card-foreground">Community Leaders</h3>
           </CardContent>
         </Card>
-      </motion.div>
-
-
+        </motion.div>
+      )}
 
       {/* Tab Content */}
       <motion.div
@@ -367,6 +419,14 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteCommunity(community)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </Button>
                         {community.leaderId ? (
                           <Button
                             variant="outline"
@@ -425,88 +485,25 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
         )}
 
         {activeTab === 'campaigns' && (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>All Fundraising Campaigns</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {campaigns.map((campaign) => (
-                    <div key={campaign.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-medium text-card-foreground">{campaign.title}</h3>
-                        <Badge variant={campaign.isActive ? "default" : "secondary"}>
-                          {campaign.isActive ? 'Active' : 'Completed'}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">{campaign.description}</p>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Community:</span>
-                          <p className="font-medium">{campaign.communityName}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Goal:</span>
-                          <p className="font-medium">₨{campaign.goal.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Raised:</span>
-                          <p className="font-medium">₨{campaign.raised.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Days Left:</span>
-                          <p className="font-medium">{campaign.daysLeft}</p>
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-green-500 h-2 rounded-full"
-                            style={{ width: `${(campaign.raised / campaign.goal) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>All Fundraising Campaigns</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CampaignsList superAdminMode={true} />
+            </CardContent>
+          </Card>
         )}
 
         {activeTab === 'issues' && (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Community Issues</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {issues.map((issue) => (
-                    <div key={issue.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-medium text-card-foreground">{issue.title}</h3>
-                        <Badge variant={
-                          issue.status === 'resolved' ? 'default' :
-                          issue.status === 'in-progress' ? 'secondary' : 'destructive'
-                        }>
-                          {issue.status}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">{issue.description}</p>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Community: {issue.communityName}</span>
-                        <span className="text-muted-foreground">
-                          {issue.createdAt.toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>All Community Issues</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <IssuesList superAdminMode={true} />
+            </CardContent>
+          </Card>
         )}
 
         {activeTab === 'users' && (
@@ -539,6 +536,40 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
           </div>
         )}
       </motion.div>
+
+      {/* Create Issue Modal */}
+      <CreateIssueModal
+        isOpen={isCreateIssueOpen}
+        onClose={() => setIsCreateIssueOpen(false)}
+      />
+
+      {/* Create Campaign Modal */}
+      <CreateCampaignModal
+        isOpen={isCreateCampaignOpen}
+        onClose={() => setIsCreateCampaignOpen(false)}
+      />
+
+      {/* Delete Community Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Community</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{communityToDelete?.name}</strong>? 
+              This action cannot be undone. All users, issues, and campaigns associated with this community will be affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteCommunity}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

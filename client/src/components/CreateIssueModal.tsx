@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { createIssue, uploadFile } from '@/services/firebase';
+import { createIssue, createIssueWithNotification, uploadFile } from '@/services/firebase';
 
 interface CreateIssueModalProps {
   isOpen: boolean;
@@ -48,7 +48,7 @@ export default function CreateIssueModal({ isOpen, onClose }: CreateIssueModalPr
         imageUrls.push(url);
       }
 
-      await createIssue({
+      await createIssueWithNotification({
         title: title.trim(),
         description: description.trim(),
         communityId: currentUser.communityId,

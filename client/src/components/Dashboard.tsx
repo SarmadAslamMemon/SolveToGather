@@ -9,8 +9,10 @@ import { Progress } from '@/components/ui/progress';
 import IssueCard from './IssueCard';
 import CampaignCard from './CampaignCard';
 import DonationModal from './DonationModal';
+import CreateReportModal from './CreateReportModal';
 import CommunityLeaderProfileModal from './CommunityLeaderProfileModal';
 import LoadingSkeleton from './LoadingSkeleton';
+import NotificationDropdown from './NotificationDropdown';
 import { useIssues, useCampaigns } from '@/hooks/useFirestore';
 import { useComments, useAddComment, useDeleteComment, usePostLikes } from '@/hooks/useComments';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +31,7 @@ export default function Dashboard() {
   const [newComment, setNewComment] = useState('');
   const [selectedLeader, setSelectedLeader] = useState<any | null>(null);
   const [isLeaderProfileOpen, setIsLeaderProfileOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const { issues, loading: issuesLoading } = useIssues(currentUser?.communityId, true);
   const { campaigns, loading: campaignsLoading } = useCampaigns(currentUser?.communityId, true);
@@ -156,19 +159,7 @@ export default function Dashboard() {
             <p className="text-muted-foreground">Here's what's happening in your community today.</p>
           </div>
           <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="relative p-2"
-              data-testid="button-notifications"
-            >
-              <Bell className="w-5 h-5" />
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center">
-                  {notificationCount}
-                </span>
-              )}
-            </Button>
+            <NotificationDropdown />
             {!isNormalUser && (
               <Button className="btn-primary" data-testid="button-new-post">
                 <Plus className="w-4 h-4 mr-2" />
@@ -370,7 +361,7 @@ export default function Dashboard() {
               variant="outline"
               className="w-full justify-center mt-8"
               data-testid="button-report-issue"
-              onClick={() => window.dispatchEvent(new CustomEvent('navigate-view', { detail: { view: 'issues' } }))}
+              onClick={() => setIsReportModalOpen(true)}
             >
               <Plus className="w-4 h-4 mr-2" />
               Report Issue
@@ -614,6 +605,12 @@ export default function Dashboard() {
           setSelectedLeader(null);
         }}
         leader={selectedLeader}
+      />
+
+      {/* Report Modal */}
+      <CreateReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
       />
     </div>
   );

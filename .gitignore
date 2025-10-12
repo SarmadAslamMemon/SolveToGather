@@ -109,6 +109,7 @@ storage.rules
 # Server specific
 server/public/
 server/uploads/
+server/secrets/
 
 # Archive files
 *.tar.gz

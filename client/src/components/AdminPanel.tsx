@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { createIssue, createCampaign, uploadFile } from '@/services/firebase';
+import { createIssue, createIssueWithNotification, createCampaign, createCampaignWithNotification, uploadFile } from '@/services/firebase';
 import { useToast } from '@/hooks/use-toast';
 import IssueCard from './IssueCard';
 import CampaignCard from './CampaignCard';
@@ -18,7 +18,9 @@ import DonationModal from './DonationModal';
 import CommunityLeaderProfileModal from './CommunityLeaderProfileModal';
 import LoadingSkeleton from './LoadingSkeleton';
 import IssuesList from '@/components/views/IssuesList';
+import ReportsList from '@/components/views/ReportsList';
 import CampaignsList from '@/components/views/CampaignsList';
+import AdminActivityDashboard from './AdminActivityDashboard';
 import { useIssues, useCampaigns } from '@/hooks/useFirestore';
 import { useComments, useAddComment, useDeleteComment, usePostLikes } from '@/hooks/useComments';
 import { getDoc, doc } from 'firebase/firestore';
@@ -255,7 +257,7 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
         }
       }
 
-      await createIssue({
+      await createIssueWithNotification({
         title: newIssue.title,
         description: newIssue.description,
         communityId: newIssue.communityId,
@@ -302,7 +304,7 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
         }
       }
 
-      await createCampaign({
+      await createCampaignWithNotification({
         title: newCampaign.title,
         description: newCampaign.description,
         goal: parseFloat(newCampaign.goal),
@@ -910,8 +912,10 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
   return (
     <div className="ml-64 p-6">
       {currentView === 'admin-dashboard' && renderStatistics()}
+      {currentView === 'admin-activity' && <AdminActivityDashboard />}
       {currentView === 'admin-issues' && <IssuesList />}
       {currentView === 'admin-campaigns' && <CampaignsList />}
+      {currentView === 'admin-reports' && <ReportsList mode="leader" />}
       {currentView === 'create-issue' && renderCreateIssue()}
       {currentView === 'create-campaign' && renderCreateCampaign()}
 

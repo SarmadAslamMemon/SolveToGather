@@ -325,14 +325,29 @@ export const updateDonationStatus = async (donationId: string, status: string, t
   }
 };
 
-// Communities
+// Communities - Fetch from API endpoint to get enriched data
 export const getCommunities = async () => {
   try {
-    const snapshot = await getDocs(collection(db, 'communities'));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const response = await fetch('/api/communities');
+    if (!response.ok) {
+      throw new Error('Failed to fetch communities from API');
+    }
+    const communities = await response.json();
+    console.log('✅ Fetched communities from API:', communities);
+    return communities;
   } catch (error) {
-    console.error('Error fetching communities:', error);
-    return [];
+    console.error('Error fetching communities from API:', error);
+    // Fallback to direct Firestore query
+    try {
+      console.log('⚠️ Falling back to direct Firestore query...');
+      const snapshot = await getDocs(collection(db, 'communities'));
+      const communities = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      console.log('✅ Fetched communities from Firestore:', communities);
+      return communities;
+    } catch (firestoreError) {
+      console.error('Error fetching communities from Firestore:', firestoreError);
+      return [];
+    }
   }
 };
 
@@ -508,6 +523,33 @@ export const addComment = async (postId: string, userId: string, text: string, p
       await updateDoc(doc(db, 'comments', parentCommentId), {
         repliesCount: increment(1)
       });
+
+      // Notify the parent comment author
+      const parentCommentDoc = await getDoc(doc(db, 'comments', parentCommentId));
+      if (parentCommentDoc.exists()) {
+        const parentCommentData = parentCommentDoc.data();
+        if (parentCommentData.userId !== userId) { // Don't notify if replying to own comment
+          const postDoc = await getDoc(doc(db, 'issues', postId));
+          const postData = postDoc.exists() ? postDoc.data() : null;
+          
+          if (postData && postData.communityId) {
+            // Get commenter's name
+            const userDoc = await getDoc(doc(db, 'users', userId));
+            const userData = userDoc.exists() ? userDoc.data() : null;
+            const commenterName = userData ? `${userData.firstName} ${userData.lastName}` : 'Someone';
+
+            await createNotification(
+              parentCommentData.userId,
+              'comment_reply',
+              'New Reply to Your Comment',
+              `${commenterName} replied to your comment`,
+              commentRef.id,
+              'comment',
+              postData.communityId
+            );
+          }
+        }
+      }
     }
 
     return commentRef.id;
@@ -836,5 +878,774 @@ export const isCommentLiked = async (commentId: string, userId: string): Promise
   } catch (error) {
     console.error('Error checking comment like status:', error);
     return false;
+  }
+};
+
+// ==================== REPORTS ====================
+
+// Report structure reference
+// {
+//   target: 'community_leader' | 'super_user',
+//   subject: string,
+//   description: string,
+//   isResolved: boolean,
+//   fromUserId: string,
+//   fromUserName: string,
+//   communityId?: string, // required when target is community_leader
+//   createdAt: Timestamp,
+//   updatedAt: Timestamp
+// }
+
+export const createReport = async (reportData: {
+  target: 'community_leader' | 'super_user';
+  subject: string;
+  description: string;
+  fromUserId: string;
+  fromUserName: string;
+  communityId?: string | null;
+}) => {
+  try {
+    console.log('📋 Creating report:', reportData);
+    
+    const payload: any = {
+      target: reportData.target,
+      subject: reportData.subject.trim(),
+      description: reportData.description.trim(),
+      isResolved: false,
+      fromUserId: reportData.fromUserId,
+      fromUserName: reportData.fromUserName,
+      communityId: reportData.communityId || null,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    };
+
+    const docRef = await addDoc(collection(db, 'reports'), payload);
+    console.log('✅ Report created with ID:', docRef.id);
+
+    // Notify the appropriate person based on target
+    if (reportData.target === 'community_leader' && reportData.communityId) {
+      // Find the community leader for this community
+      console.log('🔍 Finding community leader for:', reportData.communityId);
+      
+      const usersQuery = query(
+        collection(db, 'users'),
+        where('communityId', '==', reportData.communityId),
+        where('role', '==', 'community_leader')
+      );
+      
+      const usersSnapshot = await getDocs(usersQuery);
+      
+      if (!usersSnapshot.empty) {
+        const leaderDoc = usersSnapshot.docs[0];
+        console.log('✅ Found community leader:', leaderDoc.id);
+        
+        await createNotification(
+          leaderDoc.id,
+          'new_report',
+          'New Report Submitted',
+          `${reportData.fromUserName} submitted: ${reportData.subject}`,
+          docRef.id,
+          'report',
+          reportData.communityId
+        );
+        console.log('✅ Notified community leader about report');
+      } else {
+        console.warn('⚠️ No community leader found for this community');
+      }
+    } else if (reportData.target === 'super_user') {
+      // Find all super users
+      console.log('🔍 Finding super users');
+      
+      const superUsersQuery = query(
+        collection(db, 'users'),
+        where('role', '==', 'super_user')
+      );
+      
+      const superUsersSnapshot = await getDocs(superUsersQuery);
+      console.log(`✅ Found ${superUsersSnapshot.docs.length} super users`);
+      
+      // Notify all super users
+      const notificationPromises = superUsersSnapshot.docs.map(superUserDoc =>
+        createNotification(
+          superUserDoc.id,
+          'new_report',
+          'New Report Submitted',
+          `${reportData.fromUserName} submitted: ${reportData.subject}`,
+          docRef.id,
+          'report',
+          reportData.communityId || ''
+        )
+      );
+      
+      await Promise.all(notificationPromises);
+      console.log(`✅ Notified ${superUsersSnapshot.docs.length} super users about report`);
+    }
+
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Error creating report:', error);
+    throw error;
+  }
+};
+
+export const getReportsForLeader = async (communityId: string) => {
+  try {
+    const q = query(
+      collection(db, 'reports'),
+      where('target', '==', 'community_leader'),
+      where('communityId', '==', communityId)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs
+      .map(doc => ({ id: doc.id, ...(doc.data() as any) }))
+      .sort((a: any, b: any) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return (bTime as any) - (aTime as any);
+      });
+  } catch (error) {
+    console.error('Error fetching leader reports:', error);
+    return [];
+  }
+};
+
+export const getReportsForSuperUser = async () => {
+  try {
+    const q = query(
+      collection(db, 'reports'),
+      where('target', '==', 'super_user')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs
+      .map(doc => ({ id: doc.id, ...(doc.data() as any) }))
+      .sort((a: any, b: any) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return (bTime as any) - (aTime as any);
+      });
+  } catch (error) {
+    console.error('Error fetching super user reports:', error);
+    return [];
+  }
+};
+
+export const getUserReports = async (userId: string) => {
+  try {
+    const q = query(
+      collection(db, 'reports'),
+      where('fromUserId', '==', userId)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs
+      .map(doc => ({ id: doc.id, ...(doc.data() as any) }))
+      .sort((a: any, b: any) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return (bTime as any) - (aTime as any);
+      });
+  } catch (error) {
+    console.error('Error fetching user reports:', error);
+    return [];
+  }
+};
+
+export const updateReport = async (reportId: string, updates: Partial<{ subject: string; description: string; isResolved: boolean; }>) => {
+  try {
+    console.log('📝 Updating report:', reportId, updates);
+    
+    // Get the report data before updating
+    const reportRef = doc(db, 'reports', reportId);
+    const reportDoc = await getDoc(reportRef);
+    
+    if (!reportDoc.exists()) {
+      throw new Error('Report not found');
+    }
+
+    const reportData = reportDoc.data();
+    
+    const updateData: any = {
+      ...updates,
+      updatedAt: Timestamp.now(),
+    };
+    
+    await updateDoc(reportRef, updateData);
+    console.log('✅ Report updated');
+
+    // If marking as resolved, notify the person who created the report
+    if (updates.isResolved === true && reportData.fromUserId) {
+      console.log('📢 Notifying report author about resolution:', reportData.fromUserId);
+      
+      try {
+        await createNotification(
+          reportData.fromUserId,
+          'report_resolved',
+          'Your Report Has Been Resolved',
+          `Your report "${reportData.subject}" has been marked as resolved`,
+          reportId,
+          'report',
+          reportData.communityId || ''
+        );
+        console.log('✅ Notified report author');
+      } catch (notificationError) {
+        console.error('⚠️ Failed to notify report author (continuing anyway):', notificationError);
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('❌ Error updating report:', error);
+    throw error;
+  }
+};
+
+export const deleteReport = async (reportId: string) => {
+  try {
+    await deleteDoc(doc(db, 'reports', reportId));
+    return true;
+  } catch (error) {
+    console.error('Error deleting report:', error);
+    throw error;
+  }
+};
+
+// ==================== NOTIFICATIONS SYSTEM ====================
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: 'new_post' | 'new_campaign' | 'comment_reply' | 'issue_resolved' | 'new_report' | 'report_resolved';
+  title: string;
+  message: string;
+  relatedId: string;
+  relatedType: 'issue' | 'campaign' | 'comment' | 'report';
+  communityId: string;
+  isRead: boolean;
+  createdAt: any;
+}
+
+export const createNotification = async (
+  userId: string,
+  type: Notification['type'],
+  title: string,
+  message: string,
+  relatedId: string,
+  relatedType: Notification['relatedType'],
+  communityId: string
+) => {
+  try {
+    console.log('📝 Creating notification:', { userId, type, title, message });
+    
+    const notificationData = {
+      userId,
+      type,
+      title,
+      message,
+      relatedId,
+      relatedType,
+      communityId,
+      isRead: false,
+      createdAt: Timestamp.now()
+    };
+
+    const docRef = await addDoc(collection(db, 'notifications'), notificationData);
+    console.log('✅ Notification created with ID:', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Error creating notification:', error);
+    console.error('Notification data was:', { userId, type, title, message, relatedId, relatedType, communityId });
+    throw error;
+  }
+};
+
+export const getUserNotifications = async (userId: string, limitCount: number = 20): Promise<Notification[]> => {
+  try {
+    console.log('📥 Fetching notifications for user:', userId);
+    
+    // Use simple query without orderBy to avoid index requirement
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId)
+    );
+
+    const snapshot = await getDocs(q);
+    console.log(`✅ Found ${snapshot.docs.length} notifications`);
+    
+    const notifications = snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    })) as Notification[];
+
+    // Sort in memory
+    return notifications.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt);
+      const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt);
+      return bTime.getTime() - aTime.getTime();
+    }).slice(0, limitCount);
+  } catch (error) {
+    console.error('❌ Error fetching notifications:', error);
+    return [];
+  }
+};
+
+export const subscribeToNotifications = (userId: string, callback: (notifications: Notification[]) => void, limitCount: number = 20) => {
+  console.log('🔔 Setting up real-time notification subscription for user:', userId);
+  
+  // Use simple query without orderBy to avoid index requirement
+  const q = query(
+    collection(db, 'notifications'),
+    where('userId', '==', userId)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    console.log(`📬 Received ${snapshot.docs.length} notifications via subscription`);
+    const notifications = snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    })) as Notification[];
+    
+    // Sort in memory
+    const sorted = notifications.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt);
+      const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt);
+      return bTime.getTime() - aTime.getTime();
+    }).slice(0, limitCount);
+    
+    callback(sorted);
+  }, (error) => {
+    console.error('❌ Subscription error:', error);
+    callback([]);
+  });
+};
+
+export const markNotificationAsRead = async (notificationId: string) => {
+  try {
+    await updateDoc(doc(db, 'notifications', notificationId), {
+      isRead: true
+    });
+    return true;
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    throw error;
+  }
+};
+
+export const markAllNotificationsAsRead = async (userId: string) => {
+  try {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId),
+      where('isRead', '==', false)
+    );
+
+    const snapshot = await getDocs(q);
+    const updatePromises = snapshot.docs.map(doc => 
+      updateDoc(doc.ref, { isRead: true })
+    );
+
+    await Promise.all(updatePromises);
+    return true;
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    throw error;
+  }
+};
+
+export const getUnreadNotificationCount = async (userId: string): Promise<number> => {
+  try {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId),
+      where('isRead', '==', false)
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.size;
+  } catch (error) {
+    console.error('Error getting unread count:', error);
+    return 0;
+  }
+};
+
+export const subscribeToUnreadCount = (userId: string, callback: (count: number) => void) => {
+  console.log('🔔 Setting up unread count subscription for user:', userId);
+  
+  const q = query(
+    collection(db, 'notifications'),
+    where('userId', '==', userId),
+    where('isRead', '==', false)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    console.log(`📊 Unread count: ${snapshot.size}`);
+    callback(snapshot.size);
+  }, (error) => {
+    console.error('❌ Error in unread count subscription:', error);
+    callback(0);
+  });
+};
+
+// Helper function to notify all community members
+const notifyAllCommunityMembers = async (
+  communityId: string,
+  type: Notification['type'],
+  title: string,
+  message: string,
+  relatedId: string,
+  relatedType: Notification['relatedType'],
+  excludeUserId?: string
+) => {
+  try {
+    console.log('📢 Starting notification to community:', communityId);
+    
+    // Get all users in the community
+    const usersQuery = query(
+      collection(db, 'users'),
+      where('communityId', '==', communityId)
+    );
+    
+    const usersSnapshot = await getDocs(usersQuery);
+    console.log(`👥 Found ${usersSnapshot.docs.length} users in community`);
+    
+    // Filter out the author
+    const usersToNotify = usersSnapshot.docs.filter(userDoc => userDoc.id !== excludeUserId);
+    console.log(`📧 Will notify ${usersToNotify.length} users (excluding author)`);
+    
+    // Create notifications for each user (except the one who created the post)
+    const notificationPromises = usersToNotify.map(userDoc => {
+      console.log(`📨 Creating notification for user: ${userDoc.id}`);
+      return createNotification(
+        userDoc.id,
+        type,
+        title,
+        message,
+        relatedId,
+        relatedType,
+        communityId
+      );
+    });
+
+    const results = await Promise.all(notificationPromises);
+    console.log(`✅ Created ${results.length} notifications successfully`);
+  } catch (error) {
+    console.error('❌ Error notifying community members:', error);
+    throw error;
+  }
+};
+
+// Update createIssue to send notifications
+export const createIssueWithNotification = async (issueData: any) => {
+  try {
+    console.log('🔵 Creating issue with notification:', issueData);
+    
+    const docRef = await addDoc(collection(db, 'issues'), {
+      ...issueData,
+      createdAt: Timestamp.now(),
+      likesCount: 0,
+      commentsCount: 0,
+      status: 'pending'
+    });
+
+    console.log('✅ Issue created with ID:', docRef.id);
+
+    // Track on author document
+    if (issueData.authorId) {
+      await updateDoc(doc(db, 'users', issueData.authorId), {
+        issuesPosted: arrayUnion(docRef.id),
+      });
+      console.log('✅ Updated author document');
+    }
+
+    // Notify all community members
+    if (issueData.communityId && issueData.authorId) {
+      console.log('📢 Notifying community members:', issueData.communityId);
+      try {
+        await notifyAllCommunityMembers(
+          issueData.communityId,
+          'new_post',
+          'New Issue in Your Community',
+          `${issueData.title}`,
+          docRef.id,
+          'issue',
+          issueData.authorId
+        );
+        console.log('✅ Notifications sent successfully');
+      } catch (notificationError) {
+        console.error('⚠️ Failed to send notifications (continuing anyway):', notificationError);
+      }
+    }
+
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Error creating issue:', error);
+    throw error;
+  }
+};
+
+// Update createCampaign to send notifications
+export const createCampaignWithNotification = async (campaignData: any) => {
+  try {
+    console.log('🔵 Creating campaign with notification:', campaignData);
+    
+    const docRef = await addDoc(collection(db, 'campaigns'), {
+      ...campaignData,
+      createdAt: Timestamp.now(),
+      raised: 0,
+      isActive: true,
+      likesCount: 0,
+      commentsCount: 0
+    });
+
+    console.log('✅ Campaign created with ID:', docRef.id);
+
+    // Track on author document
+    if (campaignData.authorId) {
+      await updateDoc(doc(db, 'users', campaignData.authorId), {
+        campaignsPosted: arrayUnion(docRef.id),
+      });
+      console.log('✅ Updated author document');
+    }
+
+    // Notify all community members
+    if (campaignData.communityId && campaignData.authorId) {
+      console.log('📢 Notifying community members:', campaignData.communityId);
+      try {
+        await notifyAllCommunityMembers(
+          campaignData.communityId,
+          'new_campaign',
+          'New Fundraising Campaign',
+          `${campaignData.title}`,
+          docRef.id,
+          'campaign',
+          campaignData.authorId
+        );
+        console.log('✅ Notifications sent successfully');
+      } catch (notificationError) {
+        console.error('⚠️ Failed to send notifications (continuing anyway):', notificationError);
+      }
+    }
+
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Error creating campaign:', error);
+    throw error;
+  }
+};
+
+// Resolve issue and notify author
+export const resolveIssue = async (issueId: string) => {
+  try {
+    const issueRef = doc(db, 'issues', issueId);
+    const issueDoc = await getDoc(issueRef);
+    
+    if (!issueDoc.exists()) {
+      throw new Error('Issue not found');
+    }
+
+    const issueData = issueDoc.data();
+
+    // Update issue status
+    await updateDoc(issueRef, {
+      status: 'resolved',
+      resolvedAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    });
+
+    // Notify the issue author
+    if (issueData.authorId && issueData.communityId) {
+      await createNotification(
+        issueData.authorId,
+        'issue_resolved',
+        'Your Issue Has Been Resolved',
+        `${issueData.title} has been marked as resolved`,
+        issueId,
+        'issue',
+        issueData.communityId
+      );
+    }
+
+    // Also notify users who commented on the issue
+    const commentsQuery = query(
+      collection(db, 'comments'),
+      where('postId', '==', issueId)
+    );
+    const commentsSnapshot = await getDocs(commentsQuery);
+    
+    const uniqueCommenters = new Set<string>();
+    commentsSnapshot.docs.forEach(commentDoc => {
+      const commentData = commentDoc.data();
+      if (commentData.userId && commentData.userId !== issueData.authorId) {
+        uniqueCommenters.add(commentData.userId);
+      }
+    });
+
+    // Notify all commenters
+    const notificationPromises = Array.from(uniqueCommenters).map(userId =>
+      createNotification(
+        userId,
+        'issue_resolved',
+        'Issue You Commented On Was Resolved',
+        `${issueData.title} has been marked as resolved`,
+        issueId,
+        'issue',
+        issueData.communityId
+      )
+    );
+
+    await Promise.all(notificationPromises);
+
+    return true;
+  } catch (error) {
+    console.error('Error resolving issue:', error);
+    throw error;
+  }
+};
+
+// ==================== ADMIN ANALYTICS ====================
+
+export const getAdminPostEngagement = async (communityId: string, adminId: string, limitCount: number = 5) => {
+  try {
+    // Get admin's recent issues (no orderBy to avoid index)
+    const issuesQuery = query(
+      collection(db, 'issues'),
+      where('communityId', '==', communityId),
+      where('authorId', '==', adminId)
+    );
+
+    const issuesSnapshot = await getDocs(issuesQuery);
+    const issues = issuesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      type: 'issue'
+    }));
+
+    // Get admin's recent campaigns (no orderBy to avoid index)
+    const campaignsQuery = query(
+      collection(db, 'campaigns'),
+      where('communityId', '==', communityId),
+      where('authorId', '==', adminId)
+    );
+
+    const campaignsSnapshot = await getDocs(campaignsQuery);
+    const campaigns = campaignsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      type: 'campaign'
+    }));
+
+    // Combine and sort by date in memory
+    const allPosts = [...issues, ...campaigns].sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt);
+      const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt);
+      return bTime.getTime() - aTime.getTime();
+    }).slice(0, limitCount);
+
+    return allPosts;
+  } catch (error) {
+    console.error('Error fetching admin post engagement:', error);
+    return [];
+  }
+};
+
+export const getTrendingPosts = async (communityId: string, limitCount: number = 10, daysAgo: number = 7) => {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
+
+    // Get recent issues
+    const issuesQuery = query(
+      collection(db, 'issues'),
+      where('communityId', '==', communityId)
+    );
+
+    const issuesSnapshot = await getDocs(issuesQuery);
+    const issues = issuesSnapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        type: 'issue'
+      }))
+      .filter((issue: any) => {
+        const issueDate = issue.createdAt?.toDate?.() || new Date(issue.createdAt);
+        return issueDate >= cutoffDate;
+      });
+
+    // Get recent campaigns
+    const campaignsQuery = query(
+      collection(db, 'campaigns'),
+      where('communityId', '==', communityId)
+    );
+
+    const campaignsSnapshot = await getDocs(campaignsQuery);
+    const campaigns = campaignsSnapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        type: 'campaign'
+      }))
+      .filter((campaign: any) => {
+        const campaignDate = campaign.createdAt?.toDate?.() || new Date(campaign.createdAt);
+        return campaignDate >= cutoffDate;
+      });
+
+    // Combine and sort by engagement (likes + comments)
+    const allPosts = [...issues, ...campaigns].map((post: any) => ({
+      ...post,
+      engagement: (post.likesCount || 0) + (post.commentsCount || 0)
+    })).sort((a, b) => b.engagement - a.engagement).slice(0, limitCount);
+
+    return allPosts;
+  } catch (error) {
+    console.error('Error fetching trending posts:', error);
+    return [];
+  }
+};
+
+export const getCampaignProgress = async (communityId: string) => {
+  try {
+    const campaignsQuery = query(
+      collection(db, 'campaigns'),
+      where('communityId', '==', communityId),
+      where('isActive', '==', true)
+    );
+
+    const snapshot = await getDocs(campaignsQuery);
+    const campaigns = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const progress = ((data.raised || 0) / (data.goal || 1)) * 100;
+      return {
+        id: doc.id,
+        ...data,
+        progress: Math.min(progress, 100)
+      };
+    });
+
+    // Sort by progress (highest first)
+    return campaigns.sort((a: any, b: any) => b.progress - a.progress);
+  } catch (error) {
+    console.error('Error fetching campaign progress:', error);
+    return [];
+  }
+};
+
+export const getPendingIssues = async (communityId: string) => {
+  try {
+    const issuesQuery = query(
+      collection(db, 'issues'),
+      where('communityId', '==', communityId),
+      where('status', '==', 'pending')
+    );
+
+    const snapshot = await getDocs(issuesQuery);
+    const issues = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      urgency: (doc.data().likesCount || 0) + (doc.data().commentsCount || 0)
+    }));
+
+    // Sort by urgency (likes + comments)
+    return issues.sort((a: any, b: any) => b.urgency - a.urgency);
+  } catch (error) {
+    console.error('Error fetching pending issues:', error);
+    return [];
   }
 };

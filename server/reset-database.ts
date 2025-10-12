@@ -42,98 +42,16 @@ export async function clearDatabase() {
 }
 
 // New clean sample data
-export const cleanSampleData = {
+export const cleanSampleData: {
+  communities: any[];
+  users: any[];
+} = {
   communities: [
-    {
-      id: 'gulshan',
-      name: 'Gulshan-e-Iqbal',
-      description: 'A vibrant community in Karachi',
-      location: 'Karachi, Pakistan',
-      leaderId: null, // No leader initially
-      memberCount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: 'korangi',
-      name: 'Korangi',
-      description: 'Industrial area community',
-      location: 'Karachi, Pakistan',
-      leaderId: null, // No leader initially
-      memberCount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
+    // No dummy communities - super admin will create communities as needed
   ],
   
   users: [
-    // Super user
-    {
-      id: '00000-0000000-0',
-      email: 'admin@community.com',
-      firstName: 'Admin',
-      lastName: 'User',
-      address: 'Karachi, Pakistan',
-      nic: '00000-0000000-0',
-      phoneNumber: '+92-300-0000000',
-      role: 'super_user' as const,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    // Normal users for Gulshan
-    {
-      id: '12345-1234567-1',
-      email: 'sara@gulshan.com',
-      firstName: 'Sara',
-      lastName: 'Khan',
-      address: 'Gulshan-e-Iqbal, Karachi',
-      nic: '12345-1234567-1',
-      phoneNumber: '+92-300-1234567',
-      role: 'normal_user' as const,
-      communityId: 'gulshan',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: '12345-1234567-2',
-      email: 'ahmed@gulshan.com',
-      firstName: 'Ahmed',
-      lastName: 'Ali',
-      address: 'Gulshan-e-Iqbal, Karachi',
-      nic: '12345-1234567-2',
-      phoneNumber: '+92-300-1234568',
-      role: 'normal_user' as const,
-      communityId: 'gulshan',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    // Normal users for Korangi
-    {
-      id: '12345-1234567-3',
-      email: 'fatima@korangi.com',
-      firstName: 'Fatima',
-      lastName: 'Hassan',
-      address: 'Korangi, Karachi',
-      nic: '12345-1234567-3',
-      phoneNumber: '+92-300-1234569',
-      role: 'normal_user' as const,
-      communityId: 'korangi',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: '12345-1234567-4',
-      email: 'hassan@korangi.com',
-      firstName: 'Hassan',
-      lastName: 'Malik',
-      address: 'Korangi, Karachi',
-      nic: '12345-1234567-4',
-      phoneNumber: '+92-300-1234570',
-      role: 'normal_user' as const,
-      communityId: 'korangi',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
+    // No dummy users - users will register through the application
   ],
 };
 
@@ -143,22 +61,30 @@ export async function seedCleanDatabase() {
   
   try {
     // Add communities with specific IDs
-    for (const community of cleanSampleData.communities) {
-      await setDoc(doc(db, COLLECTIONS.COMMUNITIES, community.id), {
-        ...community,
-      });
-      console.log(`✅ Added community: ${community.name} with ID: ${community.id}`);
+    if (cleanSampleData.communities.length > 0) {
+      for (const community of cleanSampleData.communities) {
+        await setDoc(doc(db, COLLECTIONS.COMMUNITIES, community.id), {
+          ...community,
+        });
+        console.log(`✅ Added community: ${community.name} with ID: ${community.id}`);
+      }
+    } else {
+      console.log('ℹ️  No sample communities to seed - database is clean');
     }
     
     // Add users with specific IDs
-    for (const user of cleanSampleData.users) {
-      await setDoc(doc(db, COLLECTIONS.USERS, user.id), {
-        ...user,
-      });
-      console.log(`✅ Added user: ${user.email} with ID: ${user.id}`);
+    if (cleanSampleData.users.length > 0) {
+      for (const user of cleanSampleData.users) {
+        await setDoc(doc(db, COLLECTIONS.USERS, user.id), {
+          ...user,
+        });
+        console.log(`✅ Added user: ${user.email} with ID: ${user.id}`);
+      }
+    } else {
+      console.log('ℹ️  No sample users to seed - database is clean');
     }
     
-    console.log('🎉 Clean database seeded successfully!');
+    console.log('🎉 Database reset completed - ready for use!');
   } catch (error) {
     console.error('❌ Error seeding clean database:', error);
     throw error;

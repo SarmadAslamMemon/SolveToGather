@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -13,6 +14,7 @@ import MainContent from "@/components/MainContent";
 import Sidebar from "@/components/Sidebar";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import RoleSelection from "@/components/RoleSelection";
+import NotificationToast from "@/components/NotificationToast";
 import NotFound from "@/pages/not-found";
 import PaymentCallback from "@/pages/PaymentCallback";
 
@@ -67,7 +69,6 @@ function AppContent() {
       <Sidebar 
         currentView={currentView} 
         onViewChange={handleViewChange}
-        notificationCount={3}
       />
       
       <AnimatePresence mode="wait">
@@ -81,6 +82,9 @@ function AppContent() {
           <MainContent currentView={currentView} />
         </motion.div>
       </AnimatePresence>
+
+      {/* Notification Toast - appears bottom-right when new notification arrives */}
+      <NotificationToast onNavigateToNotifications={() => setCurrentView('notifications')} />
     </div>
   );
 }
@@ -101,8 +105,10 @@ function App() {
       <TooltipProvider>
         <ThemeProvider>
           <AuthProvider>
-            <Toaster />
-            <Router />
+            <NotificationProvider>
+              <Toaster />
+              <Router />
+            </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
       </TooltipProvider>
