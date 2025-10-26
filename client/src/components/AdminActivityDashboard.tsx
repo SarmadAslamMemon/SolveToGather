@@ -5,34 +5,16 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminMetrics } from '@/hooks/useNotifications';
-import { resolveIssue } from '@/services/firebase';
-import { useToast } from '@/hooks/use-toast';
-import { Heart, MessageCircle, TrendingUp, Target, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Heart, MessageCircle, TrendingUp, Target, CheckCircle2 } from 'lucide-react';
 import LoadingSkeleton from './LoadingSkeleton';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function AdminActivityDashboard() {
   const { currentUser } = useAuth();
-  const { toast } = useToast();
-  const { postEngagement, trendingPosts, campaigns, pendingIssues, loading } = useAdminMetrics(
+  const { postEngagement, trendingPosts, campaigns, loading } = useAdminMetrics(
     currentUser?.communityId || ''
   );
 
-  const handleResolveIssue = async (issueId: string, issueTitle: string) => {
-    try {
-      await resolveIssue(issueId);
-      toast({
-        title: 'Issue Resolved',
-        description: `"${issueTitle}" has been marked as resolved`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to resolve issue',
-        variant: 'destructive'
-      });
-    }
-  };
 
   const formatTime = (timestamp: any) => {
     if (!timestamp) return 'Just now';
@@ -221,68 +203,6 @@ export default function AdminActivityDashboard() {
           </Card>
         </motion.div>
 
-        {/* Section 4: Pending Issues */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <AlertTriangle className="w-5 h-5 text-orange-500" />
-                <span>Pending Issues</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {pendingIssues.length === 0 ? (
-                <div className="text-center py-8">
-                  <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                  <p className="text-muted-foreground">All issues resolved!</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {pendingIssues.slice(0, 5).map((issue: any) => (
-                    <div key={issue.id} className="p-4 border border-border rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-card-foreground text-sm mb-1">{issue.title}</h4>
-                          <div className="flex items-center space-x-3">
-                            <span className="text-xs text-muted-foreground flex items-center">
-                              <Heart className="w-3 h-3 mr-1" />
-                              {issue.likesCount || 0} likes
-                            </span>
-                            <span className="text-xs text-muted-foreground flex items-center">
-                              <MessageCircle className="w-3 h-3 mr-1" />
-                              {issue.commentsCount || 0} comments
-                            </span>
-                            {issue.urgency > 10 && (
-                              <Badge variant="destructive" className="text-xs">High Priority</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <span className="text-xs text-muted-foreground">
-                          {formatTime(issue.createdAt)}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleResolveIssue(issue.id, issue.title)}
-                          className="text-xs h-7"
-                        >
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          Mark Resolved
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
       </div>
     </div>
   );

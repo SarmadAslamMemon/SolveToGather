@@ -11,11 +11,230 @@ import { Heart, MessageCircle, Share2, DollarSign, AlertTriangle, Users, Calenda
 import { useIssues, useCampaigns } from '@/hooks/useFirestore';
 import { useComments, useAddComment, usePostLikes } from '@/hooks/useComments';
 import { useToast } from '@/hooks/use-toast';
+import ShareModal from './ShareModal';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import LoadingSkeleton from './LoadingSkeleton';
 import DonationModal from './DonationModal';
 import CommunityLeaderProfileModal from './CommunityLeaderProfileModal';
+
+// Individual Post Card Component with proper like functionality
+const PostCard = ({ post, onOpenPost, onShare, onDonate, onAuthorClick }: {
+  post: any;
+  onOpenPost: (post: any) => void;
+  onShare: (post: any) => void;
+  onDonate: (id: string) => void;
+  onAuthorClick: (id: string) => void;
+}) => {
+  const { isLiked, toggleLike, loading: likeLoading } = usePostLikes(post.id);
+  
+  const formatTimeAgo = (timestamp: any) => {
+    if (!timestamp) return 'Unknown';
+    
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`;
+    } else if (diffInMinutes < 1440) {
+      return `${Math.floor(diffInMinutes / 60)}h ago`;
+    } else {
+      return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-PK', {
+      style: 'currency',
+      currency: 'PKR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="bg-card border-border hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+        {/* Post Header */}
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <Avatar className="w-12 h-12 cursor-pointer" onClick={() => onAuthorClick(post.authorId)}>
+              <AvatarImage src={post.authorImage || ''} />
+              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-orange-500 text-white">
+                {post.authorName?.charAt(0) || post.title?.charAt(0) || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <div className="flex items-center space-x-2">
+                <h3 
+                  className="font-semibold text-card-foreground hover:text-primary cursor-pointer transition-colors"
+                  onClick={() => onAuthorClick(post.authorId)}
+                >
+                  {post.authorName || 'Community Leader'}
+                </h3>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  post.type === 'issue' 
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                    : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                }`}>
+                  {post.type === 'issue' ? 'Issue' : 'Campaign'}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                <span>{formatTimeAgo(post.createdAt)}</span>
+                <span>•</span>
+                <span>{post.communityName || 'Community'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Post Content */}
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-card-foreground mb-3">
+              {post.title}
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              {post.description}
+            </p>
+          </div>
+
+          {/* Campaign Progress */}
+          {post.type === 'campaign' && post.goal && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-orange-50 to-blue-50 dark:from-orange-900/20 dark:to-blue-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-card-foreground">Fundraising Progress</span>
+                <span className="text-sm font-bold text-card-foreground">
+                  {formatCurrency(post.raised || 0)} / {formatCurrency(post.goal)}
+                </span>
+              </div>
+              <Progress 
+                value={Math.min(((post.raised || 0) / post.goal) * 100, 100)} 
+                className="h-3 mb-2"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{Math.round(((post.raised || 0) / post.goal) * 100)}% funded</span>
+                <span>{post.daysLeft || 0} days left</span>
+              </div>
+            </div>
+          )}
+
+          {/* Images */}
+          {((post.images && post.images.length > 0) || post.image) && (
+            <div className="mb-4">
+              <div className="relative bg-muted rounded-lg overflow-hidden">
+                <img
+                  src={(post.images && post.images[0]) || post.image}
+                  alt={post.title}
+                  className="w-full h-64 object-cover cursor-pointer"
+                  onClick={() => onOpenPost(post)}
+                />
+                
+                {/* Image Navigation */}
+                {post.images && post.images.length > 1 && (
+                  <>
+                    <button
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle image navigation
+                      }}
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle image navigation
+                      }}
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
+                      {post.images.map((_: any, idx: number) => (
+                        <span key={idx} className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-white' : 'bg-white/60'}`} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="flex items-center space-x-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleLike();
+                }}
+                disabled={likeLoading}
+                className={`flex items-center space-x-2 transition-colors ${
+                  isLiked 
+                    ? 'text-red-500 hover:text-red-600' 
+                    : 'text-muted-foreground hover:text-red-500'
+                }`}
+              >
+                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                <span>{post.likesCount || 0}</span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenPost(post);
+                }}
+                className="flex items-center space-x-2 text-muted-foreground hover:text-blue-500 transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span>{post.commentsCount || 0}</span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShare(post);
+                }}
+                className="flex items-center space-x-2 text-muted-foreground hover:text-orange-500 transition-colors"
+              >
+                <Share2 className="w-5 h-5" />
+                <span>Share</span>
+              </Button>
+            </div>
+
+            {/* Donate Button for Campaigns */}
+            {post.type === 'campaign' && (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDonate(post.id);
+                }}
+                className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
+              >
+                <Heart className="w-4 h-4 mr-2" />
+                Donate Now
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
 
 export default function FeedPage() {
   const { currentUser } = useAuth();
@@ -28,6 +247,8 @@ export default function FeedPage() {
   const [newComment, setNewComment] = useState('');
   const [selectedLeader, setSelectedLeader] = useState<any | null>(null);
   const [isLeaderProfileOpen, setIsLeaderProfileOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [sharePost, setSharePost] = useState<any | null>(null);
 
   // Fetch all issues and campaigns (no community filter)
   const { issues, loading: issuesLoading } = useIssues(undefined, true);
@@ -73,6 +294,11 @@ export default function FeedPage() {
     setOpenPost(null);
     setImageIndex(0);
     setNewComment('');
+  };
+
+  const handleShare = (post: any) => {
+    setSharePost(post);
+    setIsShareModalOpen(true);
   };
 
   const handleAddComment = async () => {
@@ -227,168 +453,14 @@ export default function FeedPage() {
                   </motion.div>
                 ) : (
                   filteredPosts.map((post, index) => (
-                    <motion.div
+                    <PostCard
                       key={`${post.type}-${post.id}`}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                    >
-                      <Card className="bg-card border-border hover:shadow-lg transition-shadow duration-300 overflow-hidden">
-                        {/* Post Header */}
-                        <CardContent className="p-6">
-                          <div className="flex items-center space-x-3 mb-4">
-                            <Avatar className="w-12 h-12 cursor-pointer" onClick={() => handleAuthorClick(post.authorId)}>
-                              <AvatarImage src={post.authorImage || ''} />
-                              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-orange-500 text-white">
-                                {post.authorName?.charAt(0) || post.title?.charAt(0) || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2">
-                                <h3 
-                                  className="font-semibold text-card-foreground hover:text-primary cursor-pointer transition-colors"
-                                  onClick={() => handleAuthorClick(post.authorId)}
-                                >
-                                  {post.authorName || 'Community Leader'}
-                                </h3>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  post.type === 'issue' 
-                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                    : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-                                }`}>
-                                  {post.type === 'issue' ? 'Issue' : 'Campaign'}
-                                </span>
-                              </div>
-                              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                                <Clock className="w-4 h-4" />
-                                <span>{formatTimeAgo(post.createdAt)}</span>
-                                <span>•</span>
-                                <span>{post.communityName || 'Community'}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Post Content */}
-                          <div className="mb-4">
-                            <h2 className="text-xl font-bold text-card-foreground mb-3">
-                              {post.title}
-                            </h2>
-                            <p className="text-muted-foreground leading-relaxed">
-                              {post.description}
-                            </p>
-                          </div>
-
-                          {/* Campaign Progress */}
-                          {post.type === 'campaign' && post.goal && (
-                            <div className="mb-4 p-4 bg-gradient-to-r from-orange-50 to-blue-50 dark:from-orange-900/20 dark:to-blue-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-card-foreground">Fundraising Progress</span>
-                                <span className="text-sm font-bold text-card-foreground">
-                                  {formatCurrency(post.raised || 0)} / {formatCurrency(post.goal)}
-                                </span>
-                              </div>
-                              <Progress 
-                                value={Math.min(((post.raised || 0) / post.goal) * 100, 100)} 
-                                className="h-3 mb-2"
-                              />
-                              <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>{Math.round(((post.raised || 0) / post.goal) * 100)}% funded</span>
-                                <span>{post.daysLeft || 0} days left</span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Images */}
-                          {((post.images && post.images.length > 0) || post.image) && (
-                            <div className="mb-4">
-                              <div className="relative bg-muted rounded-lg overflow-hidden">
-                                <img
-                                  src={(post.images && post.images[0]) || post.image}
-                                  alt={post.title}
-                                  className="w-full h-64 object-cover cursor-pointer"
-                                  onClick={() => handleOpenPost(post)}
-                                />
-                                
-                                {/* Image Navigation */}
-                                {post.images && post.images.length > 1 && (
-                                  <>
-                                    <button
-                                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        // Handle image navigation
-                                      }}
-                                    >
-                                      <ChevronLeft className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        // Handle image navigation
-                                      }}
-                                    >
-                                      <ChevronRight className="w-5 h-5" />
-                                    </button>
-                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
-                                      {post.images.map((_: any, idx: number) => (
-                                        <span key={idx} className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-white' : 'bg-white/60'}`} />
-                                      ))}
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Action Buttons */}
-                          <div className="flex items-center justify-between pt-4 border-t border-border">
-                            <div className="flex items-center space-x-6">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenPost(post)}
-                                className="flex items-center space-x-2 text-muted-foreground hover:text-red-500 transition-colors"
-                              >
-                                <Heart className="w-5 h-5" />
-                                <span>{post.likesCount || 0}</span>
-                              </Button>
-
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenPost(post)}
-                                className="flex items-center space-x-2 text-muted-foreground hover:text-blue-500 transition-colors"
-                              >
-                                <MessageCircle className="w-5 h-5" />
-                                <span>{post.commentsCount || 0}</span>
-                              </Button>
-
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="flex items-center space-x-2 text-muted-foreground hover:text-orange-500 transition-colors"
-                              >
-                                <Share2 className="w-5 h-5" />
-                                <span>Share</span>
-                              </Button>
-                            </div>
-
-                            {/* Donate Button for Campaigns */}
-                            {post.type === 'campaign' && (
-                              <Button
-                                onClick={() => handleDonate(post.id)}
-                                className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
-                              >
-                                <Heart className="w-4 h-4 mr-2" />
-                                Donate Now
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
+                      post={post}
+                      onOpenPost={handleOpenPost}
+                      onShare={handleShare}
+                      onDonate={handleDonate}
+                      onAuthorClick={handleAuthorClick}
+                    />
                   ))
                 )}
               </AnimatePresence>
@@ -633,6 +705,25 @@ export default function FeedPage() {
         }}
         leader={selectedLeader}
       />
+
+      {/* Share Modal */}
+      {sharePost && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => {
+            setIsShareModalOpen(false);
+            setSharePost(null);
+          }}
+          post={{
+            id: sharePost.id,
+            title: sharePost.title,
+            description: sharePost.description,
+            type: sharePost.type,
+            authorName: sharePost.authorName,
+            communityName: sharePost.communityName,
+          }}
+        />
+      )}
     </div>
   );
 }

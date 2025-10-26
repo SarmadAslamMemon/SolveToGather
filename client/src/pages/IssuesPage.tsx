@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIssues } from '@/hooks/useFirestore';
 import { useComments, useCommentReplies, useAddComment, useDeleteComment, usePostLikes, useCommentLikes } from '@/hooks/useComments';
+import ShareModal from '@/components/ShareModal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +15,189 @@ import CommunityLeaderProfileModal from '@/components/CommunityLeaderProfileModa
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+
+// Individual Issue Card Component with proper like functionality
+const IssueCard = ({ issue, onOpenIssue, onShare, onAuthorClick }: {
+  issue: any;
+  onOpenIssue: (issue: any) => void;
+  onShare: (issue: any) => void;
+  onAuthorClick: (id: string) => void;
+}) => {
+  const { isLiked, toggleLike, loading: likeLoading } = usePostLikes(issue.id);
+  
+  const formatTimeAgo = (timestamp: any) => {
+    if (!timestamp) return 'Unknown';
+    
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`;
+    } else if (diffInMinutes < 1440) {
+      return `${Math.floor(diffInMinutes / 60)}h ago`;
+    } else {
+      return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    }
+  };
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -30, scale: 0.95 }}
+      transition={{ 
+        duration: 0.4, 
+        ease: "easeOut"
+      }}
+      whileHover={{ y: -2 }}
+      className="group"
+    >
+      <Card 
+        className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
+        onClick={() => onOpenIssue(issue)}
+      >
+        <CardContent className="p-0">
+          {/* Enhanced Post Header */}
+          <div className="flex items-center justify-between p-6 pb-4">
+            <div 
+              className="flex items-center space-x-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-2 -m-2 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAuthorClick(issue.authorId);
+              }}
+            >
+              <div className="relative">
+                <Avatar className="w-12 h-12 ring-2 ring-blue-200 dark:ring-blue-800">
+                  <AvatarImage src={issue.authorImage} />
+                  <AvatarFallback className="text-sm font-semibold bg-gradient-to-r from-blue-500 to-orange-500 text-white">
+                    {issue.authorName?.charAt(0) || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-slate-800"></div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                  {issue.authorName || 'Community Leader'}
+                </h3>
+                <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">
+                  <Clock className="w-4 h-4 mr-2" />
+                  <span>{formatTimeAgo(issue.createdAt)}</span>
+                  <span className="mx-2">•</span>
+                  <MapPin className="w-4 h-4 mr-1" />
+                  <span>Community</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <Bookmark className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Post Content */}
+          <div className="px-4 pb-3">
+            <h2 className="font-semibold text-card-foreground mb-2">{issue.title}</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">{issue.description}</p>
+          </div>
+
+          {/* Post Images */}
+          {(issue.images?.length || issue.image) && (
+            <div className="relative">
+              <div className="relative w-full bg-muted">
+                <img
+                  src={(issue.images && issue.images[0]) || issue.image}
+                  alt={issue.title}
+                  className="w-full max-h-96 object-cover"
+                />
+                {issue.images && issue.images.length > 1 && (
+                  <>
+                    <button
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle image navigation
+                      }}
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle image navigation
+                      }}
+                      aria-label="Next image"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                      {issue.images.map((_: string, idx: number) => (
+                        <span key={idx} className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-white' : 'bg-white/50'}`} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Post Actions */}
+          <div className="px-4 py-3 border-t border-border">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleLike();
+                }}
+                disabled={likeLoading}
+                className={`flex items-center space-x-2 transition-colors ${
+                  isLiked 
+                    ? 'text-red-500 hover:text-red-600' 
+                    : 'text-muted-foreground hover:text-red-500'
+                }`}
+              >
+                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                <span>{issue.likesCount || 0}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenIssue(issue);
+                }}
+                className="flex items-center space-x-2 text-muted-foreground hover:text-primary"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>{issue.commentsCount || 0}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShare(issue);
+                }}
+                className="flex items-center space-x-2 text-muted-foreground hover:text-accent-foreground"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Share</span>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
 
 export default function IssuesPage() {
   const { currentUser } = useAuth();
@@ -27,6 +211,8 @@ export default function IssuesPage() {
   const [showReplies, setShowReplies] = useState<{ [key: string]: boolean }>({});
   const [selectedLeader, setSelectedLeader] = useState<any | null>(null);
   const [isLeaderProfileOpen, setIsLeaderProfileOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [sharePost, setSharePost] = useState<any | null>(null);
 
   // Hooks for comments
   const { comments, loading: commentsLoading, hasMore, showAll, loadMore } = useComments(openIssue?.id || '', 5);
@@ -84,6 +270,11 @@ export default function IssuesPage() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleShare = (issue: any) => {
+    setSharePost(issue);
+    setIsShareModalOpen(true);
   };
 
   useEffect(() => {
@@ -313,136 +504,13 @@ export default function IssuesPage() {
           <div className="space-y-8">
             <AnimatePresence>
               {issues.map((issue, index) => (
-                <motion.div
+                <IssueCard
                   key={issue.id}
-                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -30, scale: 0.95 }}
-                  transition={{ 
-                    duration: 0.4, 
-                    delay: index * 0.1,
-                    ease: "easeOut"
-                  }}
-                  whileHover={{ y: -2 }}
-                  className="group"
-                >
-                  <Card 
-                    className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer"
-                    onClick={() => setOpenIssue(issue)}
-                  >
-                    <CardContent className="p-0">
-                      {/* Enhanced Post Header */}
-                      <div className="flex items-center justify-between p-6 pb-4">
-                        <div 
-                          className="flex items-center space-x-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-2 -m-2 transition-colors"
-                          onClick={() => handleAuthorClick(issue.authorId)}
-                        >
-                          <div className="relative">
-                            <Avatar className="w-12 h-12 ring-2 ring-blue-200 dark:ring-blue-800">
-                              <AvatarImage src={issue.authorImage} />
-                              <AvatarFallback className="text-sm font-semibold bg-gradient-to-r from-blue-500 to-orange-500 text-white">
-                                {issue.authorName?.charAt(0) || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-slate-800"></div>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                              {issue.authorName || 'Community Leader'}
-                            </h3>
-                            <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">
-                              <Clock className="w-4 h-4 mr-2" />
-                              <span>{formatTimeAgo(issue.createdAt)}</span>
-                              <span className="mx-2">•</span>
-                              <MapPin className="w-4 h-4 mr-1" />
-                              <span>Community</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Bookmark className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                    {/* Post Content */}
-                    <div className="px-4 pb-3">
-                      <h2 className="font-semibold text-card-foreground mb-2">{issue.title}</h2>
-                      <p className="text-muted-foreground text-sm leading-relaxed">{issue.description}</p>
-                    </div>
-
-                    {/* Post Images */}
-                    {(issue.images?.length || issue.image) && (
-                      <div className="relative">
-                        <div className="relative w-full bg-muted">
-                          <img
-                            src={(issue.images && issue.images[0]) || issue.image}
-                            alt={issue.title}
-                            className="w-full max-h-96 object-cover"
-                          />
-                          {issue.images && issue.images.length > 1 && (
-                            <>
-                              <button
-                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full"
-                                onClick={() => setImageIndex((prev) => (prev - 1 + issue.images.length) % issue.images.length)}
-                                aria-label="Previous image"
-                              >
-                                <ChevronLeft className="w-4 h-4" />
-                              </button>
-                              <button
-                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full"
-                                onClick={() => setImageIndex((prev) => (prev + 1) % issue.images.length)}
-                                aria-label="Next image"
-                              >
-                                <ChevronRight className="w-4 h-4" />
-                              </button>
-                              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                                {issue.images.map((_: string, idx: number) => (
-                                  <span key={idx} className={`w-2 h-2 rounded-full ${idx === imageIndex ? 'bg-white' : 'bg-white/50'}`} />
-                                ))}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Post Actions */}
-                    <div className="px-4 py-3 border-t border-border">
-                      <div className="flex items-center justify-between">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex items-center space-x-2 text-muted-foreground hover:text-red-500"
-                        >
-                          <Heart className="w-4 h-4" />
-                          <span>{issue.likesCount || 0}</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex items-center space-x-2 text-muted-foreground hover:text-primary"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                          <span>{issue.commentsCount || 0}</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex items-center space-x-2 text-muted-foreground hover:text-accent-foreground"
-                        >
-                          <Share2 className="w-4 h-4" />
-                          <span>Share</span>
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                  issue={issue}
+                  onOpenIssue={setOpenIssue}
+                  onShare={handleShare}
+                  onAuthorClick={handleAuthorClick}
+                />
             ))}
             </AnimatePresence>
           </div>
@@ -643,6 +711,25 @@ export default function IssuesPage() {
         }}
         leader={selectedLeader}
       />
+
+      {/* Share Modal */}
+      {sharePost && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => {
+            setIsShareModalOpen(false);
+            setSharePost(null);
+          }}
+          post={{
+            id: sharePost.id,
+            title: sharePost.title,
+            description: sharePost.description,
+            type: 'issue',
+            authorName: sharePost.authorName,
+            communityName: sharePost.communityName,
+          }}
+        />
+      )}
     </div>
   );
 }

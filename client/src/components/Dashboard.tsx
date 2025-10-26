@@ -16,7 +16,7 @@ import NotificationDropdown from './NotificationDropdown';
 import { useIssues, useCampaigns } from '@/hooks/useFirestore';
 import { useComments, useAddComment, useDeleteComment, usePostLikes } from '@/hooks/useComments';
 import { useToast } from '@/hooks/use-toast';
-import { getDoc, doc } from 'firebase/firestore';
+import { getDoc, doc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Bell, Plus, AlertTriangle, DollarSign, Users, Heart, MessageCircle, Share2, ChevronLeft, ChevronRight, Clock, Send, X } from 'lucide-react';
 
@@ -32,6 +32,8 @@ export default function Dashboard() {
   const [selectedLeader, setSelectedLeader] = useState<any | null>(null);
   const [isLeaderProfileOpen, setIsLeaderProfileOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [communityMembersCount, setCommunityMembersCount] = useState(0);
+  const [membersLoading, setMembersLoading] = useState(true);
 
   const { issues, loading: issuesLoading } = useIssues(currentUser?.communityId, true);
   const { campaigns, loading: campaignsLoading } = useCampaigns(currentUser?.communityId, true);
@@ -42,11 +44,36 @@ export default function Dashboard() {
   const { deleteComment, loading: deletingComment } = useDeleteComment();
   const { isLiked: isPostLiked, toggleLike: togglePostLike, loading: postLikeLoading } = usePostLikes(openPost?.id || '');
 
-  // Mock stats data - in production, this would come from Firebase
+  // Fetch real community member count
+  useEffect(() => {
+    const fetchCommunityMembers = async () => {
+      if (!currentUser?.communityId) return;
+      
+      try {
+        setMembersLoading(true);
+        const usersQuery = query(collection(db, 'users'), where('communityId', '==', currentUser.communityId));
+        const usersSnapshot = await getDocs(usersQuery);
+        setCommunityMembersCount(usersSnapshot.size);
+      } catch (error) {
+        console.error('Error fetching community members:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load community member count",
+          variant: "destructive",
+        });
+      } finally {
+        setMembersLoading(false);
+      }
+    };
+
+    fetchCommunityMembers();
+  }, [currentUser?.communityId, toast]);
+
+  // Real stats data from database
   const stats = {
     activeIssues: issues.length,
     totalRaised: campaigns.reduce((sum, campaign) => sum + (campaign.raised || 0), 0),
-    communityMembers: 1247,
+    communityMembers: communityMembersCount,
   };
   const isNormalUser = currentUser?.role !== 'super_user' && currentUser?.role !== 'community_leader';
 
@@ -216,7 +243,7 @@ export default function Dashboard() {
                 <Users className="w-6 h-6 text-chart-3" />
               </div>
               <span className="text-2xl font-bold text-card-foreground" data-testid="text-community-members">
-                {stats.communityMembers.toLocaleString()}
+                {membersLoading ? '...' : stats.communityMembers.toLocaleString()}
               </span>
             </div>
             <h3 className="font-medium text-card-foreground mb-1">Community Members</h3>

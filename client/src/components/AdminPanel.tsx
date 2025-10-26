@@ -21,9 +21,10 @@ import IssuesList from '@/components/views/IssuesList';
 import ReportsList from '@/components/views/ReportsList';
 import CampaignsList from '@/components/views/CampaignsList';
 import AdminActivityDashboard from './AdminActivityDashboard';
+import PaymentMethods from './PaymentMethods';
 import { useIssues, useCampaigns } from '@/hooks/useFirestore';
 import { useComments, useAddComment, useDeleteComment, usePostLikes } from '@/hooks/useComments';
-import { getDoc, doc } from 'firebase/firestore';
+import { getDoc, doc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 
   Plus, 
@@ -31,9 +32,7 @@ import {
   Users, 
   DollarSign, 
   AlertTriangle, 
-  UserPlus,
   Megaphone,
-  Flag,
   Heart,
   MessageCircle,
   Share2,
@@ -108,38 +107,74 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
   const issueFileInputRef = useRef<HTMLInputElement | null>(null);
   const campaignFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Mock admin stats - in production, this would come from Firebase
-  const adminStats = {
-    totalUsers: 1247,
-    activeCampaigns: 18,
-    totalDonations: 4200000,
-    pendingIssues: 7,
-  };
+  // Real admin stats calculated from database
+  const [adminStats, setAdminStats] = useState({
+    totalUsers: 0,
+    activeCampaigns: 0,
+    totalDonations: 0,
+    pendingIssues: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  // Mock recent activity - in production, this would come from Firebase
-  const recentActivity = [
-    {
-      id: '1',
-      message: 'New user "Ahmad Khan" joined Gulshan-e-Iqbal community',
-      timestamp: '2 minutes ago',
-      icon: UserPlus,
-      color: 'text-chart-1',
-    },
-    {
-      id: '2',
-      message: '₨5,000 donated to "Emergency Relief Fund" campaign',
-      timestamp: '15 minutes ago',
-      icon: DollarSign,
-      color: 'text-chart-2',
-    },
-    {
-      id: '3',
-      message: 'New issue "Street Light Repairs" reported in Korangi',
-      timestamp: '1 hour ago',
-      icon: Flag,
-      color: 'text-chart-3',
-    },
-  ];
+  // Calculate real statistics from database
+  useEffect(() => {
+    const calculateStats = async () => {
+      if (!currentUser?.communityId) return;
+      
+      try {
+        setStatsLoading(true);
+        
+        // Get total users in community
+        const usersQuery = query(collection(db, 'users'), where('communityId', '==', currentUser.communityId));
+        const usersSnapshot = await getDocs(usersQuery);
+        const totalUsers = usersSnapshot.size;
+        
+        // Get active campaigns in community
+        const campaignsQuery = query(
+          collection(db, 'campaigns'), 
+          where('communityId', '==', currentUser.communityId),
+          where('isActive', '==', true)
+        );
+        const campaignsSnapshot = await getDocs(campaignsQuery);
+        const activeCampaigns = campaignsSnapshot.size;
+        
+        // Calculate total donations from all campaigns in community
+        let totalDonations = 0;
+        campaignsSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          totalDonations += data.raised || 0;
+        });
+        
+        // Get pending issues in community
+        const issuesQuery = query(
+          collection(db, 'issues'), 
+          where('communityId', '==', currentUser.communityId),
+          where('status', '==', 'pending')
+        );
+        const issuesSnapshot = await getDocs(issuesQuery);
+        const pendingIssues = issuesSnapshot.size;
+        
+        setAdminStats({
+          totalUsers,
+          activeCampaigns,
+          totalDonations,
+          pendingIssues,
+        });
+      } catch (error) {
+        console.error('Error calculating admin stats:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load statistics. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    calculateStats();
+  }, [currentUser?.communityId, toast]);
+
 
   useEffect(() => {
     if (currentUser?.communityId) {
@@ -358,16 +393,17 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
         <p className="text-muted-foreground">Overview of your community activity.</p>
       </motion.header>
 
-      {(issuesLoading || campaignsLoading) && (
+      {(issuesLoading || campaignsLoading || statsLoading) && (
         <LoadingSkeleton type="dashboard" />
       )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
-      >
+      {!statsLoading && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+        >
         <Card className="bg-card border-border" data-testid="card-admin-stats-users">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -423,7 +459,8 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
             <h3 className="font-medium text-card-foreground">Pending Issues</h3>
           </CardContent>
         </Card>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Content Grid merged from Dashboard */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -568,46 +605,6 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
         </motion.div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.8 }}
-        className="mt-8"
-      >
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity) => {
-                const Icon = activity.icon;
-                return (
-                  <motion.div
-                    key={activity.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center space-x-4 p-4 hover:bg-muted rounded-lg transition-colors"
-                    data-testid={`activity-${activity.id}`}
-                  >
-                    <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                      <Icon className={`w-5 h-5 ${activity.color}`} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-card-foreground" data-testid={`activity-message-${activity.id}`}>
-                        {activity.message}
-                      </p>
-                      <p className="text-sm text-muted-foreground" data-testid={`activity-timestamp-${activity.id}`}>
-                        {activity.timestamp}
-                      </p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
 
       <DonationModal
         isOpen={isDonationModalOpen}
@@ -915,6 +912,7 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
       {currentView === 'admin-activity' && <AdminActivityDashboard />}
       {currentView === 'admin-issues' && <IssuesList />}
       {currentView === 'admin-campaigns' && <CampaignsList />}
+      {currentView === 'admin-payment-methods' && <PaymentMethods />}
       {currentView === 'admin-reports' && <ReportsList mode="leader" />}
       {currentView === 'create-issue' && renderCreateIssue()}
       {currentView === 'create-campaign' && renderCreateCampaign()}

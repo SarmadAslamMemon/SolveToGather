@@ -25,7 +25,8 @@ import {
   Megaphone,
   Newspaper,
   Flag,
-  TrendingUp
+  TrendingUp,
+  CreditCard
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -104,6 +105,7 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
         { id: 'admin-activity', label: 'Activity & Insights', icon: TrendingUp },
         { id: 'admin-issues', label: 'All Issues', icon: AlertTriangle },
         { id: 'admin-campaigns', label: 'All Campaigns', icon: DollarSign },
+        { id: 'admin-payment-methods', label: 'Payment Methods', icon: CreditCard },
         { id: 'admin-reports', label: 'Reports', icon: Flag },
         { id: 'create-issue', label: 'Add Issue', icon: Plus },
         { id: 'create-campaign', label: 'Raise Campaign', icon: Megaphone },
@@ -291,30 +293,32 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
             );
           })}
           
-          {/* Notifications - always shown */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 + items.length * 0.1 }}
-          >
-            <button
-              onClick={() => onViewChange('notifications')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-md transition-colors ${
-                currentView === 'notifications'
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              }`}
-              data-testid="button-nav-notifications"
+          {/* Notifications - hidden for super admin */}
+          {!isSuperUser && (
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 + items.length * 0.1 }}
             >
-              <Bell className="w-5 h-5" />
-              <span>Notifications</span>
-              {notificationCount > 0 && (
-                <span className="ml-auto bg-destructive text-destructive-foreground px-2 py-1 text-xs rounded-full" data-testid="text-notification-count">
-                  {notificationCount}
-                </span>
-              )}
-            </button>
-          </motion.div>
+              <button
+                onClick={() => onViewChange('notifications')}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-md transition-colors ${
+                  currentView === 'notifications'
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                }`}
+                data-testid="button-nav-notifications"
+              >
+                <Bell className="w-5 h-5" />
+                <span>Notifications</span>
+                {notificationCount > 0 && (
+                  <span className="ml-auto bg-destructive text-destructive-foreground px-2 py-1 text-xs rounded-full" data-testid="text-notification-count">
+                    {notificationCount}
+                  </span>
+                )}
+              </button>
+            </motion.div>
+          )}
         </nav>
         </div>
         {/* Bottom Action */}

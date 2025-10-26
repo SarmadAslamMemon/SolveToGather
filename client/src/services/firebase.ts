@@ -513,10 +513,25 @@ export const addComment = async (postId: string, userId: string, text: string, p
     // Add comment
     const commentRef = await addDoc(collection(db, 'comments'), commentData);
     
-    // Update post comments count
-    await updateDoc(doc(db, 'issues', postId), {
-      commentsCount: increment(1)
-    });
+    // Update post comments count - check if it's an issue or campaign
+    const issueRef = doc(db, 'issues', postId);
+    const campaignRef = doc(db, 'campaigns', postId);
+    
+    try {
+      // Try to update as issue first
+      await updateDoc(issueRef, {
+        commentsCount: increment(1)
+      });
+    } catch (error) {
+      // If it fails, try as campaign
+      try {
+        await updateDoc(campaignRef, {
+          commentsCount: increment(1)
+        });
+      } catch (campaignError) {
+        console.error('Error updating comments count for post:', postId);
+      }
+    }
 
     // Update parent comment replies count if it's a reply
     if (parentCommentId) {
@@ -529,8 +544,14 @@ export const addComment = async (postId: string, userId: string, text: string, p
       if (parentCommentDoc.exists()) {
         const parentCommentData = parentCommentDoc.data();
         if (parentCommentData.userId !== userId) { // Don't notify if replying to own comment
-          const postDoc = await getDoc(doc(db, 'issues', postId));
-          const postData = postDoc.exists() ? postDoc.data() : null;
+          // Try to get post data from issues first, then campaigns
+          let postDoc = await getDoc(doc(db, 'issues', postId));
+          let postData = postDoc.exists() ? postDoc.data() : null;
+          
+          if (!postData) {
+            postDoc = await getDoc(doc(db, 'campaigns', postId));
+            postData = postDoc.exists() ? postDoc.data() : null;
+          }
           
           if (postData && postData.communityId) {
             // Get commenter's name
@@ -736,10 +757,25 @@ export const likePost = async (postId: string, userId: string) => {
         createdAt: Timestamp.now()
       });
 
-      // Update post likes count
-      await updateDoc(doc(db, 'issues', postId), {
-        likesCount: increment(1)
-      });
+      // Update post likes count - check if it's an issue or campaign
+      const issueRef = doc(db, 'issues', postId);
+      const campaignRef = doc(db, 'campaigns', postId);
+      
+      try {
+        // Try to update as issue first
+        await updateDoc(issueRef, {
+          likesCount: increment(1)
+        });
+      } catch (error) {
+        // If it fails, try as campaign
+        try {
+          await updateDoc(campaignRef, {
+            likesCount: increment(1)
+          });
+        } catch (campaignError) {
+          console.error('Error updating likes count for post:', postId);
+        }
+      }
 
       return true;
     }
@@ -766,10 +802,25 @@ export const unlikePost = async (postId: string, userId: string) => {
       // Remove like
       await deleteDoc(existingLikes.docs[0].ref);
 
-      // Update post likes count
-      await updateDoc(doc(db, 'issues', postId), {
-        likesCount: increment(-1)
-      });
+      // Update post likes count - check if it's an issue or campaign
+      const issueRef = doc(db, 'issues', postId);
+      const campaignRef = doc(db, 'campaigns', postId);
+      
+      try {
+        // Try to update as issue first
+        await updateDoc(issueRef, {
+          likesCount: increment(-1)
+        });
+      } catch (error) {
+        // If it fails, try as campaign
+        try {
+          await updateDoc(campaignRef, {
+            likesCount: increment(-1)
+          });
+        } catch (campaignError) {
+          console.error('Error updating likes count for post:', postId);
+        }
+      }
 
       return true;
     }

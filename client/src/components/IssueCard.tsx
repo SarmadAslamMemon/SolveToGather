@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toggleLike } from '@/services/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { usePostLikes } from '@/hooks/useComments';
 import { Heart, MessageCircle, Share2, Clock } from 'lucide-react';
+import ShareModal from './ShareModal';
 
 interface IssueCardProps {
   issue: {
@@ -30,10 +31,17 @@ interface IssueCardProps {
 export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }: IssueCardProps) {
   const { currentUser } = useAuth();
   const { toast } = useToast();
-  const [isLiked, setIsLiked] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [likesCount, setLikesCount] = useState(issue.likesCount || 0);
-  const [isLiking, setIsLiking] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
+
+  // Use the proper hook for like functionality
+  const { isLiked, loading: isLiking, toggleLike } = usePostLikes(issue.id);
+
+  // Sync local state with props when they change (for real-time updates)
+  useEffect(() => {
+    setLikesCount(issue.likesCount || 0);
+  }, [issue.likesCount]);
 
   const handleLike = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -46,11 +54,8 @@ export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }:
       return;
     }
 
-    setIsLiking(true);
     try {
-      const liked = await toggleLike(issue.id, currentUser.id);
-      setIsLiked(liked);
-      setLikesCount(prev => liked ? prev + 1 : prev - 1);
+      await toggleLike();
       onLike?.(issue.id);
     } catch (error) {
       toast({
@@ -58,8 +63,6 @@ export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }:
         description: "Failed to update like. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLiking(false);
     }
   };
 
@@ -70,19 +73,7 @@ export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }:
 
   const handleShare = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (navigator.share) {
-      navigator.share({
-        title: issue.title,
-        text: issue.description,
-        url: window.location.href,
-      });
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: "Link copied",
-        description: "Issue link copied to clipboard",
-      });
-    }
+    setIsShareModalOpen(true);
     onShare?.(issue.id);
   };
 
@@ -229,6 +220,20 @@ export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }:
           </div>
         </CardContent>
       </Card>
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        post={{
+          id: issue.id,
+          title: issue.title,
+          description: issue.description,
+          type: 'issue',
+          authorName: issue.authorName,
+          communityName: issue.communityName,
+        }}
+      />
     </motion.div>
   );
 }

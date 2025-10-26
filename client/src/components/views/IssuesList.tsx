@@ -129,9 +129,19 @@ export default function IssuesList({ superAdminMode = false }: IssuesListProps) 
             <IssueCard
               key={issue.id}
               issue={issue}
-              onLike={(id) => console.log('Liked issue:', id)}
-              onComment={(id) => console.log('Comment on issue:', id)}
-              onShare={(id) => console.log('Share issue:', id)}
+              onLike={(id) => {
+                // Like is handled internally by IssueCard, no action needed here
+              }}
+              onComment={(id) => {
+                // Find the issue and open the modal
+                const issueToOpen = issues.find(issue => issue.id === id);
+                if (issueToOpen) {
+                  setOpenIssue(issueToOpen);
+                }
+              }}
+              onShare={(id) => {
+                // Share is handled internally by IssueCard, no action needed here
+              }}
               onOpen={(it) => setOpenIssue(it)}
             />
           ))
