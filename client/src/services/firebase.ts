@@ -183,7 +183,420 @@ export const createCampaign = async (campaignData: any) => {
   }
 };
 
-// Payments
+// Payment Methods
+export const getPaymentMethods = async (communityId: string, leaderId?: string) => {
+  try {
+    let q;
+    if (leaderId) {
+      // Query by both communityId and leaderId
+      q = query(
+        collection(db, 'paymentMethod'),
+        where('communityId', '==', communityId),
+        where('leaderId', '==', leaderId),
+        where('isActive', '==', true)
+      );
+    } else {
+      // Query by communityId only
+      q = query(
+        collection(db, 'paymentMethod'),
+        where('communityId', '==', communityId),
+        where('isActive', '==', true)
+      );
+    }
+
+    const snapshot = await getDocs(q);
+    const methods = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    return methods;
+  } catch (error) {
+    console.error('Error fetching payment methods:', error);
+    return [];
+  }
+};
+
+// Transactions - New Receipt Upload System
+export const uploadReceiptImage = async (file: File, transactionId: string, communityId: string): Promise<string> => {
+  try {
+    const imagePath = `receipts/${communityId}/${transactionId}/${Date.now()}-${file.name}`;
+    const url = await uploadFile(file, imagePath);
+    return url;
+  } catch (error) {
+    console.error('Error uploading receipt image:', error);
+    throw error;
+  }
+};
+
+export const createTransaction = async (transactionData: {
+  campaignId: string;
+  communityId: string;
+  senderId: string;
+  senderName: string;
+  amount: number;
+  totalAmount: number;
+  requiredAmount: number;
+  paymentMethod: string;
+  receiptImageUrl: string;
+}): Promise<{ transactionHistoryId: string; transactionDetailId: string }> => {
+  try {
+    console.log(`📝 [createTransaction] Creating new transaction for campaign ${transactionData.campaignId}`);
+    console.log(`📝 [createTransaction] Transaction data:`, {
+      senderId: transactionData.senderId,
+      senderName: transactionData.senderName,
+      amount: transactionData.amount,
+      totalAmount: transactionData.totalAmount,
+      paymentMethod: transactionData.paymentMethod
+    });
+    
+    // Create transactionDetails first
+    const transactionDetailRef = await addDoc(collection(db, 'transactionDetails'), {
+      senderName: transactionData.senderName,
+      senderId: transactionData.senderId,
+      amount: transactionData.amount,
+      time: Timestamp.now(),
+      receiptImage: transactionData.receiptImageUrl,
+      isPaymentVerified: false,
+      paymentMethod: transactionData.paymentMethod,
+      communityId: transactionData.communityId,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+    console.log(`✅ [createTransaction] Created transactionDetails: ${transactionDetailRef.id}`);
+
+    // Create transactionHistory with reference to transactionDetails
+    const transactionHistoryRef = await addDoc(collection(db, 'transactionHistory'), {
+      transId: '', // Will be set after creation
+      campaignId: transactionData.campaignId,
+      requiredAmount: transactionData.requiredAmount,
+      totalAmount: transactionData.totalAmount,
+      transactionDetailId: transactionDetailRef.id,
+      status: 'pending',
+      communityId: transactionData.communityId,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+    console.log(`✅ [createTransaction] Created transactionHistory: ${transactionHistoryRef.id} with status: pending`);
+
+    // Update transactionHistory with the actual transId
+    await updateDoc(doc(db, 'transactionHistory', transactionHistoryRef.id), {
+      transId: transactionHistoryRef.id,
+    });
+
+    // Update transactionDetails with transactionHistoryId
+    await updateDoc(doc(db, 'transactionDetails', transactionDetailRef.id), {
+      transactionHistoryId: transactionHistoryRef.id,
+    });
+    
+    console.log(`✅ [createTransaction] Transaction created successfully. Will appear in admin pending transactions.`);
+    console.log(`📋 [createTransaction] Transaction will be visible to admin for campaign: ${transactionData.campaignId}`);
+
+    return {
+      transactionHistoryId: transactionHistoryRef.id,
+      transactionDetailId: transactionDetailRef.id,
+    };
+  } catch (error) {
+    console.error('❌ [createTransaction] Error creating transaction:', error);
+    throw error;
+  }
+};
+
+export const getCampaignSupporterCount = async (campaignId: string): Promise<number> => {
+  try {
+    // Get all verified transactions for this campaign
+    const q = query(
+      collection(db, 'transactionHistory'),
+      where('campaignId', '==', campaignId),
+      where('status', '==', 'verified')
+    );
+    const snapshot = await getDocs(q);
+    
+    // Count unique supporters (unique senderIds from transactionDetails)
+    const supporterIds = new Set<string>();
+    await Promise.all(
+      snapshot.docs.map(async (transactionDoc) => {
+        const data = transactionDoc.data();
+        if (data.transactionDetailId) {
+          const detailDoc = await getDoc(doc(db, 'transactionDetails', data.transactionDetailId));
+          if (detailDoc.exists()) {
+            const detailData = detailDoc.data() as any;
+            if (detailData.senderId) {
+              supporterIds.add(detailData.senderId);
+            }
+          }
+        }
+      })
+    );
+    
+    return supporterIds.size;
+  } catch (error) {
+    console.error('Error fetching campaign supporter count:', error);
+    return 0;
+  }
+};
+
+export const getTransactionsByCampaign = async (campaignId: string) => {
+  try {
+    const q = query(
+      collection(db, 'transactionHistory'),
+      where('campaignId', '==', campaignId),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    const transactions = await Promise.all(
+      snapshot.docs.map(async (transactionDoc) => {
+        const data = transactionDoc.data();
+        // Fetch transaction details
+        if (data.transactionDetailId) {
+          const detailDoc = await getDoc(doc(db, 'transactionDetails', data.transactionDetailId));
+          return {
+            id: transactionDoc.id,
+            ...data,
+            details: detailDoc.exists() ? detailDoc.data() : null,
+          };
+        }
+        return {
+          id: transactionDoc.id,
+          ...data,
+          details: null,
+        };
+      })
+    );
+    return transactions;
+  } catch (error) {
+    console.error('Error fetching transactions by campaign:', error);
+    return [];
+  }
+};
+
+export const getTransactionsByUser = async (userId: string) => {
+  try {
+    const q = query(
+      collection(db, 'transactionDetails'),
+      where('senderId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    const transactions = await Promise.all(
+      snapshot.docs.map(async (transactionDetailDoc) => {
+        const data = transactionDetailDoc.data();
+        // Fetch transaction history
+        if (data.transactionHistoryId) {
+          const historyDoc = await getDoc(doc(db, 'transactionHistory', data.transactionHistoryId));
+          return {
+            id: transactionDetailDoc.id,
+            ...data,
+            history: historyDoc.exists() ? historyDoc.data() : null,
+          };
+        }
+        return { id: transactionDetailDoc.id, ...data };
+      })
+    );
+    return transactions;
+  } catch (error) {
+    console.error('Error fetching transactions by user:', error);
+    return [];
+  }
+};
+
+export const getPendingTransactions = async (communityId: string, leaderId?: string) => {
+  try {
+    // Query without orderBy to avoid index requirement - we'll sort in memory
+    const q = query(
+      collection(db, 'transactionHistory'),
+      where('communityId', '==', communityId),
+      where('status', '==', 'pending')
+    );
+    const snapshot = await getDocs(q);
+    
+    // If leaderId is provided, filter transactions for campaigns created by the leader
+    let transactions = await Promise.all(
+      snapshot.docs.map(async (transactionHistoryDoc) => {
+        const data = transactionHistoryDoc.data();
+        // Fetch transaction details
+        let details = null;
+        if (data.transactionDetailId) {
+          const detailDoc = await getDoc(doc(db, 'transactionDetails', data.transactionDetailId));
+          if (detailDoc.exists()) {
+            details = detailDoc.data();
+          }
+        }
+        
+        // Fetch campaign to check authorId
+        let campaign: any = null;
+        if (data.campaignId) {
+          const campaignDoc = await getDoc(doc(db, 'campaigns', data.campaignId));
+          if (campaignDoc.exists()) {
+            campaign = campaignDoc.data();
+          }
+        }
+        
+        return {
+          id: transactionHistoryDoc.id,
+          ...data,
+          details,
+          campaign,
+        };
+      })
+    );
+    
+    // Filter by leader's campaigns if leaderId is provided
+    if (leaderId) {
+      transactions = transactions.filter(transaction => 
+        transaction.campaign && transaction.campaign.authorId === leaderId
+      );
+    }
+    
+    // Sort by createdAt in memory (descending - newest first)
+    transactions.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+      const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+      return bTime.getTime() - aTime.getTime();
+    });
+    
+    return transactions;
+  } catch (error) {
+    console.error('Error fetching pending transactions:', error);
+    return [];
+  }
+};
+
+export const verifyTransaction = async (
+  transactionHistoryId: string,
+  leaderId: string,
+  verified: boolean,
+  rejectionReason?: string
+): Promise<void> => {
+  try {
+    console.log(`🔍 [verifyTransaction] Starting verification for transaction ${transactionHistoryId}, verified: ${verified}`);
+    
+    const transactionHistoryDoc = await getDoc(doc(db, 'transactionHistory', transactionHistoryId));
+    if (!transactionHistoryDoc.exists()) {
+      throw new Error('Transaction not found');
+    }
+
+    const transactionData = transactionHistoryDoc.data();
+    const status = verified ? 'verified' : 'rejected';
+    
+    console.log(`📊 [verifyTransaction] Transaction data:`, {
+      campaignId: transactionData.campaignId,
+      totalAmount: transactionData.totalAmount,
+      status: status
+    });
+
+    // Update transactionHistory
+    await updateDoc(doc(db, 'transactionHistory', transactionHistoryId), {
+      status,
+      updatedAt: Timestamp.now(),
+    });
+    console.log(`✅ [verifyTransaction] Updated transactionHistory status to: ${status}`);
+
+    // Update transactionDetails and get sender info for notifications
+    let senderId: string | null = null;
+    if (transactionData.transactionDetailId) {
+      const detailDoc = await getDoc(doc(db, 'transactionDetails', transactionData.transactionDetailId));
+      if (detailDoc.exists()) {
+        const detailData = detailDoc.data();
+        senderId = detailData.senderId || null;
+      }
+      
+      const updateData: any = {
+        isPaymentVerified: verified,
+        updatedAt: Timestamp.now(),
+      };
+      
+      if (verified) {
+        updateData.verifiedBy = leaderId;
+        updateData.verifiedAt = Timestamp.now();
+        console.log(`✅ [verifyTransaction] Setting verification details for transactionDetails`);
+      } else {
+        // When rejecting, set rejectionReason if provided
+        if (rejectionReason) {
+          updateData.rejectionReason = rejectionReason;
+          console.log(`❌ [verifyTransaction] Setting rejection reason`);
+        }
+      }
+      
+      await updateDoc(doc(db, 'transactionDetails', transactionData.transactionDetailId), updateData);
+      console.log(`✅ [verifyTransaction] Updated transactionDetails`);
+    }
+
+    // If verified, update campaign raised amount
+    if (verified) {
+      console.log(`💰 [verifyTransaction] Updating campaign raised amount: campaignId=${transactionData.campaignId}, amount=${transactionData.totalAmount}`);
+      await updateCampaignRaisedAmount(transactionData.campaignId, transactionData.totalAmount);
+      console.log(`✅ [verifyTransaction] Campaign raised amount updated successfully`);
+    } else if (senderId && rejectionReason) {
+      // If rejected, notify the user with the rejection reason
+      try {
+        console.log(`📧 [verifyTransaction] Sending rejection notification to user: ${senderId}`);
+        await createNotification(
+          senderId,
+          'transaction_rejected',
+          'Payment Rejected',
+          `Your payment has been rejected. Reason: ${rejectionReason}`,
+          transactionHistoryId,
+          'transaction',
+          transactionData.communityId
+        );
+        console.log(`✅ [verifyTransaction] Rejection notification sent successfully`);
+      } catch (notificationError) {
+        console.error('⚠️ [verifyTransaction] Failed to send rejection notification (continuing anyway):', notificationError);
+        // Don't throw - notification failure shouldn't break the rejection process
+      }
+    }
+    
+    console.log(`✅ [verifyTransaction] Transaction verification completed successfully`);
+  } catch (error) {
+    console.error('❌ [verifyTransaction] Error verifying transaction:', error);
+    throw error;
+  }
+};
+
+export const updateCampaignRaisedAmount = async (campaignId: string, amount: number): Promise<void> => {
+  try {
+    // Ensure amount is a valid number
+    const addAmount = Number(amount);
+    if (isNaN(addAmount) || addAmount <= 0) {
+      throw new Error(`Invalid amount: ${amount}`);
+    }
+    
+    // Get current campaign to check raised amount
+    const campaignDoc = await getDoc(doc(db, 'campaigns', campaignId));
+    if (!campaignDoc.exists()) {
+      throw new Error('Campaign not found');
+    }
+    
+    const campaignData = campaignDoc.data();
+    const currentRaised = Number(campaignData.raised || 0);
+    const newRaised = currentRaised + addAmount;
+    
+    await updateDoc(doc(db, 'campaigns', campaignId), {
+      raised: newRaised,
+      updatedAt: Timestamp.now(),
+    });
+    
+    console.log(`✅ Updated campaign ${campaignId} raised amount: ${currentRaised} + ${addAmount} = ${newRaised}`);
+  } catch (error) {
+    console.error('Error updating campaign raised amount:', error);
+    throw error;
+  }
+};
+
+export const updateTransactionStatus = async (transactionId: string, status: string): Promise<void> => {
+  try {
+    await updateDoc(doc(db, 'transactionHistory', transactionId), {
+      status,
+      updatedAt: Timestamp.now(),
+    });
+  } catch (error) {
+    console.error('Error updating transaction status:', error);
+    throw error;
+  }
+};
+
+// Payments - DEPRECATED: Use transactions instead
 export const createPayment = async (paymentData: any) => {
   try {
     const docRef = await addDoc(collection(db, 'payments'), {
@@ -1164,11 +1577,11 @@ export const deleteReport = async (reportId: string) => {
 export interface Notification {
   id: string;
   userId: string;
-  type: 'new_post' | 'new_campaign' | 'comment_reply' | 'issue_resolved' | 'new_report' | 'report_resolved';
+  type: 'new_post' | 'new_campaign' | 'comment_reply' | 'issue_resolved' | 'new_report' | 'report_resolved' | 'transaction_rejected';
   title: string;
   message: string;
   relatedId: string;
-  relatedType: 'issue' | 'campaign' | 'comment' | 'report';
+  relatedType: 'issue' | 'campaign' | 'comment' | 'report' | 'transaction';
   communityId: string;
   isRead: boolean;
   createdAt: any;

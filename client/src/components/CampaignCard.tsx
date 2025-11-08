@@ -20,6 +20,7 @@ interface CampaignCardProps {
 export default function CampaignCard({ campaign, onDonate }: CampaignCardProps) {
   const progress = (campaign.raised / campaign.goal) * 100;
   const progressClamped = Math.min(progress, 100);
+  const isGoalReached = Number(campaign.raised || 0) >= Number(campaign.goal || 0);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-PK', {
@@ -31,7 +32,9 @@ export default function CampaignCard({ campaign, onDonate }: CampaignCardProps) 
   };
 
   const handleDonate = () => {
-    onDonate?.(campaign.id);
+    if (!isGoalReached) {
+      onDonate?.(campaign.id);
+    }
   };
 
   return (
@@ -103,15 +106,26 @@ export default function CampaignCard({ campaign, onDonate }: CampaignCardProps) 
             </div>
           </div>
 
-          {/* Donate Button */}
-          <Button
-            onClick={handleDonate}
-            className="w-full bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
-            data-testid={`button-donate-${campaign.id}`}
-          >
-            <Heart className="w-4 h-4 mr-2" />
-            Donate Now
-          </Button>
+          {/* Donate Button - Only show if goal not reached */}
+          {!isGoalReached ? (
+            <Button
+              onClick={handleDonate}
+              className="w-full bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
+              data-testid={`button-donate-${campaign.id}`}
+            >
+              <Heart className="w-4 h-4 mr-2" />
+              Donate Now
+            </Button>
+          ) : (
+            <div className="w-full bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-3 text-center">
+              <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                ✓ Goal Achieved!
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                This campaign has reached its fundraising goal
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

@@ -61,7 +61,26 @@ function AppContent() {
   }
 
   const handleViewChange = (view: string) => {
-    setCurrentView(view);
+    console.group('=== NAVIGATION START ===');
+    console.log('[App] handleViewChange called with view:', view);
+    console.log('[App] Current view before change:', currentView);
+    console.log('[App] isAdmin:', currentUser?.role === 'super_user' || (currentUser?.role === 'community_leader' && selectedRole === 'leader'));
+    console.log('[App] Current user role:', currentUser?.role);
+    console.log('[App] Selected role:', selectedRole);
+    
+    // Log the component stack
+    console.group('Component Stack:');
+    console.trace('Navigation initiated from:');
+    console.groupEnd();
+    
+    setCurrentView(prevView => {
+      console.log('[App] setCurrentView called. Previous view:', prevView, 'New view:', view);
+      return view;
+    });
+    
+    // Log after state update is scheduled
+    console.log('[App] State update scheduled for view:', view);
+    console.groupEnd();
   };
 
   return (
@@ -71,13 +90,14 @@ function AppContent() {
         onViewChange={handleViewChange}
       />
       
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" key={currentView}>
         <motion.div
           key={currentView}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
+          style={{ height: '100%' }}
         >
           <MainContent currentView={currentView} />
         </motion.div>

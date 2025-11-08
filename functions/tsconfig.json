@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "target": "ES2020",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": "..",
+    "typeRoots": ["../node_modules/@types", "./node_modules/@types"],
+    "paths": {
+      "@shared/*": ["shared/*"],
+      "@server/*": ["server/*"]
+    }
+  },
+  "compileOnSave": true,
+  "include": [
+    "index.ts",
+    "types.d.ts",
+    "../server/**/*",
+    "../shared/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "../node_modules",
+    "../server/reset-database.ts",
+    "../server/reset-db.ts",
+    "../server/reset-seeding.js",
+    "../server/seed-db.js"
+  ]
+}
+

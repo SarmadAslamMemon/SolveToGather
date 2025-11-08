@@ -19,6 +19,8 @@ interface MainContentProps {
 }
 
 export default function MainContent({ currentView }: MainContentProps) {
+  console.log('[MainContent] Rendering with currentView:', currentView);
+  console.log('[MainContent] Current time:', new Date().toISOString());
   const { currentUser, selectedRole } = useAuth();
   const { toast } = useToast();
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
@@ -137,8 +139,9 @@ export default function MainContent({ currentView }: MainContentProps) {
     setSelectedCommunity(null);
   };
 
-  // Super User gets special interface
+  // Log when super user view is rendered
   if (isSuperUser) {
+    console.log('[MainContent] Rendering SuperUserPanel');
     return (
       <>
         <SuperUserPanel currentView={currentView} onUserRoleChange={handleUserRoleChange} onRefreshUsers={refreshUsersRef} />
@@ -153,25 +156,35 @@ export default function MainContent({ currentView }: MainContentProps) {
     );
   }
 
-  // Community Leader in leader mode gets admin panel for admin views
+  // Log when admin panel view is rendered
   if (isCommunityLeader && effectiveRole === 'leader' && (
     currentView === 'admin-dashboard' ||
     currentView === 'admin-activity' ||
     currentView === 'admin-issues' ||
     currentView === 'admin-campaigns' ||
     currentView === 'admin-reports' ||
+    currentView === 'admin-payment-methods' ||
+    currentView === 'admin-transactions' ||
     currentView === 'create-issue' ||
     currentView === 'create-campaign' ||
     currentView === 'manage-communities' ||
     currentView === 'analytics' ||
     currentView === 'settings'
   )) {
+    console.log('[MainContent] Rendering AdminPanel for view:', currentView);
     return <AdminPanel currentView={currentView} />;
   }
 
-  // Notifications view is available for all roles
+  // Log when notifications view is rendered
   if (currentView === 'notifications') {
+    console.log('[MainContent] Rendering Notifications view');
     return <Notifications />;
+  }
+
+  // Log when payment methods view is rendered
+  if (currentView === 'admin-payment-methods') {
+    console.log('[MainContent] Rendering PaymentMethods view');
+    return <AdminPanel currentView={currentView} />;
   }
 
   // Reports views
@@ -193,7 +206,10 @@ export default function MainContent({ currentView }: MainContentProps) {
     return <Dashboard />;
   }
 
-  // Default feed page for all other cases (including community leaders in member mode)
+  // Log when default feed page is rendered
+  console.log('[MainContent] Rendering default FeedPage for view:', currentView);
+  console.log('[MainContent] isCommunityLeader:', isCommunityLeader);
+  console.log('[MainContent] effectiveRole:', effectiveRole);
   return (
     <>
       <FeedPage />

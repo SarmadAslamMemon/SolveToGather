@@ -1,0 +1,36 @@
+app = "communityconnect"
+
+[build]
+  builder = "paketobuildpacks/builder:base"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "5000"
+
+[[services]]
+  internal_port = 5000
+  protocol = "tcp"
+  processes = ["app"]
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.http_checks]]
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "5s"
+    method = "GET"
+    path = "/api/health"
+
+# Set environment variables using:
+# fly secrets set KEY=value
+
+
+
+
+

@@ -103,49 +103,39 @@ export default function IssuesList({ superAdminMode = false }: IssuesListProps) 
 
   return (
     <div className={superAdminMode ? 'p-0' : 'ml-64 p-6'}>
-      {!superAdminMode && (
-        <motion.header
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-6"
-        >
-          <h1 className="text-3xl font-bold text-gradient">Issues</h1>
-          <p className="text-muted-foreground">All issues from your community</p>
-        </motion.header>
-      )}
-
-      <div className="space-y-6 max-w-2xl mx-auto">
-        {issues.length === 0 ? (
-          <Card className="bg-card border-border">
-            <CardContent className="p-8 text-center">
-              <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-card-foreground mb-2">No Issues Yet</h3>
-              <p className="text-muted-foreground">Be the first to report a community issue.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          issues.map((issue) => (
-            <IssueCard
-              key={issue.id}
-              issue={issue}
-              onLike={(id) => {
-                // Like is handled internally by IssueCard, no action needed here
-              }}
-              onComment={(id) => {
-                // Find the issue and open the modal
-                const issueToOpen = issues.find(issue => issue.id === id);
-                if (issueToOpen) {
-                  setOpenIssue(issueToOpen);
-                }
-              }}
-              onShare={(id) => {
-                // Share is handled internally by IssueCard, no action needed here
-              }}
-              onOpen={(it) => setOpenIssue(it)}
-            />
-          ))
-        )}
+      <div className="flex flex-col items-center space-y-6 w-full">
+        <div className="w-full max-w-2xl space-y-6">
+          {issues.length === 0 ? (
+            <Card className="bg-card border-border">
+              <CardContent className="p-8 text-center">
+                <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-card-foreground mb-2">No Issues Yet</h3>
+                <p className="text-muted-foreground">Be the first to report a community issue.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            issues.map((issue) => (
+              <IssueCard
+                key={issue.id}
+                issue={issue}
+                onLike={(id) => {
+                  // Like is handled internally by IssueCard, no action needed here
+                }}
+                onComment={(id) => {
+                  // Find the issue and open the modal
+                  const issueToOpen = issues.find(issue => issue.id === id);
+                  if (issueToOpen) {
+                    setOpenIssue(issueToOpen);
+                  }
+                }}
+                onShare={(id) => {
+                  // Share is handled internally by IssueCard, no action needed here
+                }}
+                onOpen={(it) => setOpenIssue(it)}
+              />
+            ))
+          )}
+        </div>
       </div>
 
       {/* Enhanced Issue Modal */}

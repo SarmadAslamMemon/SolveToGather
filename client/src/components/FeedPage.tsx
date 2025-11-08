@@ -216,8 +216,8 @@ const PostCard = ({ post, onOpenPost, onShare, onDonate, onAuthorClick }: {
               </Button>
             </div>
 
-            {/* Donate Button for Campaigns */}
-            {post.type === 'campaign' && (
+            {/* Donate Button for Campaigns - Only show if goal not reached */}
+            {post.type === 'campaign' && Number(post.raised || 0) < Number(post.goal || 0) && (
               <Button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -228,6 +228,14 @@ const PostCard = ({ post, onOpenPost, onShare, onDonate, onAuthorClick }: {
                 <Heart className="w-4 h-4 mr-2" />
                 Donate Now
               </Button>
+            )}
+            {/* Goal Achieved Message for Campaigns */}
+            {post.type === 'campaign' && Number(post.raised || 0) >= Number(post.goal || 0) && (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-2 text-center">
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                  ✓ Goal Achieved!
+                </p>
+              </div>
             )}
           </div>
         </CardContent>

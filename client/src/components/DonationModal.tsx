@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { PAYMENT_METHODS, calculateDonationSummary, processPayment } from '@/services/payment';
+import { PAYMENT_METHODS, calculateDonationSummary } from '@/services/payment';
+import { getPaymentMethods, createTransaction, uploadReceiptImage, getCampaignSupporterCount } from '@/services/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { 
   X, Check, ChevronLeft, ChevronRight, Smartphone, Wallet, Landmark, RefreshCcw, 
-  Heart, Share2, Users, TrendingUp, Clock, Shield, Gift, Star, Zap
+  Heart, Share2, Users, TrendingUp, Clock, Shield, Gift, Star, Zap, Upload
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
@@ -27,6 +28,11 @@ interface DonationModalProps {
     goal?: number;
     raised?: number;
     paymentMethods?: string[];
+    communityId?: string;
+    authorId?: string;
+    daysLeft?: number;
+    duration?: string;
+    createdAt?: any;
   } | null;
 }
 
@@ -39,11 +45,106 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
   const [imageIndex, setImageIndex] = useState(0);
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [donationImpact, setDonationImpact] = useState<string>('');
+  const [campaignPaymentMethods, setCampaignPaymentMethods] = useState<any[]>([]);
+  const [selectedPaymentMethodDetails, setSelectedPaymentMethodDetails] = useState<any>(null);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [uploadStep, setUploadStep] = useState<'payment' | 'upload' | 'submitted'>('payment');
+  const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [supporterCount, setSupporterCount] = useState<number>(0);
+  const [daysLeft, setDaysLeft] = useState<number>(0);
 
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
   const presetAmounts = [1000, 2500, 5000, 10000, 25000, 50000];
+
+  // Fetch payment methods and campaign stats when modal opens or campaign changes
+  useEffect(() => {
+    const fetchCampaignData = async () => {
+      if (isOpen && campaign) {
+        // Try to get communityId and authorId from campaign
+        const communityId = campaign.communityId;
+        const authorId = campaign.authorId;
+        
+        if (communityId && authorId) {
+          try {
+            // Fetch payment methods
+            const methods = await getPaymentMethods(communityId, authorId);
+            // Filter to only show payment methods that were selected for this campaign
+            if (campaign.paymentMethods && campaign.paymentMethods.length > 0) {
+              const filteredMethods = methods.filter((method: any) => 
+                campaign.paymentMethods!.includes(method.type)
+              );
+              setCampaignPaymentMethods(filteredMethods);
+            } else {
+              setCampaignPaymentMethods(methods);
+            }
+          } catch (error) {
+            console.error('Error fetching campaign payment methods:', error);
+            setCampaignPaymentMethods([]);
+          }
+        } else {
+          // If communityId or authorId are missing, show empty state
+          setCampaignPaymentMethods([]);
+        }
+
+        // Fetch supporter count
+        if (campaign.id) {
+          try {
+            const count = await getCampaignSupporterCount(campaign.id);
+            setSupporterCount(count);
+          } catch (error) {
+            console.error('Error fetching supporter count:', error);
+            setSupporterCount(0);
+          }
+        }
+
+        // Calculate days left
+        const campaignDaysLeft = (campaign as any).daysLeft || (campaign as any).days_left;
+        const campaignDuration = (campaign as any).duration;
+        
+        if (campaignDaysLeft !== undefined && campaignDaysLeft !== null) {
+          // If daysLeft is stored as a number, use it directly
+          setDaysLeft(Math.max(0, Math.floor(campaignDaysLeft)));
+        } else if (campaign.createdAt && campaignDuration) {
+          // Calculate from createdAt and duration string (e.g., "30 days")
+          const createdAt = campaign.createdAt?.toDate ? campaign.createdAt.toDate() : new Date(campaign.createdAt);
+          const now = new Date();
+          
+          // Parse duration string (e.g., "30 days" -> 30)
+          const durationMatch = campaignDuration.toString().match(/(\d+)/);
+          const totalDays = durationMatch ? parseInt(durationMatch[1], 10) : 0;
+          
+          if (totalDays > 0) {
+            const elapsedDays = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+            const remaining = Math.max(0, totalDays - elapsedDays);
+            setDaysLeft(remaining);
+          } else {
+            setDaysLeft(0);
+          }
+        } else {
+          setDaysLeft(0);
+        }
+      } else {
+        setCampaignPaymentMethods([]);
+        setSupporterCount(0);
+        setDaysLeft(0);
+      }
+    };
+    fetchCampaignData();
+  }, [isOpen, campaign?.id, campaign?.communityId, campaign?.authorId, campaign?.paymentMethods, campaign?.daysLeft, campaign?.createdAt]);
+
+  // Update selected payment method details when selection changes
+  useEffect(() => {
+    if (selectedMethod && campaignPaymentMethods.length > 0) {
+      const methodDetails = campaignPaymentMethods.find((m: any) => m.type === selectedMethod);
+      setSelectedPaymentMethodDetails(methodDetails || null);
+    } else {
+      setSelectedPaymentMethodDetails(null);
+    }
+  }, [selectedMethod, campaignPaymentMethods]);
 
   // Calculate donation impact based on amount
   useEffect(() => {
@@ -79,7 +180,20 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
     setStep('payment');
   };
 
-  const handlePaymentSubmit = async () => {
+  const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setReceiptFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReceiptPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleReceiptUpload = async () => {
     if (!selectedMethod) {
       toast({
         title: "Payment method required",
@@ -89,61 +203,105 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
       return;
     }
 
-    if (!currentUser || !campaign) return;
+    if (!receiptFile) {
+      toast({
+        title: "Receipt required",
+        description: "Please upload a receipt image",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    setIsProcessing(true);
+    if (!currentUser || !campaign || !campaign.communityId) return;
+
+    setIsUploadingReceipt(true);
     setStep('processing');
 
     try {
       const donationAmount = parseFloat(amount);
       const summary = calculateDonationSummary(donationAmount);
 
-      // Process payment using the new payment service
-      const result = await processPayment({
+      // Generate a temporary transaction ID for receipt upload path
+      const tempTransactionId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Upload receipt image first
+      const receiptImageUrl = await uploadReceiptImage(receiptFile, tempTransactionId, campaign.communityId);
+
+      // Create transaction with receipt URL
+      const result = await createTransaction({
         campaignId: campaign.id,
-        communityId: campaign.communityId || 'test-community',
-        userId: currentUser.id,
+        communityId: campaign.communityId,
+        senderId: currentUser.id,
+        senderName: `${currentUser.firstName} ${currentUser.lastName}`.trim(),
         amount: summary.amount,
-        paymentMethod: selectedMethod as 'jazzcash' | 'easypaisa' | 'bank' | 'raast',
-        phoneNumber: phoneNumber || undefined,
-        description: `Donation for ${campaign.title}`,
+        totalAmount: summary.total,
+        requiredAmount: campaign.goal || 0,
+        paymentMethod: selectedMethod,
+        receiptImageUrl: receiptImageUrl,
       });
 
-      if (result.success) {
+      // Re-upload receipt with actual transaction ID for better organization
+      try {
+        const finalReceiptUrl = await uploadReceiptImage(receiptFile, result.transactionHistoryId, campaign.communityId);
+        // Update transaction details with final receipt URL if different
+        if (finalReceiptUrl !== receiptImageUrl) {
+          // Note: We could update the transactionDetails here, but for now we'll keep the first upload
+        }
+      } catch (error) {
+        console.warn('Failed to re-upload receipt with transaction ID:', error);
+        // Continue anyway as we already have the receipt URL
+      }
+
+      setTransactionId(result.transactionHistoryId);
       setStep('success');
+      setUploadStep('submitted');
       
       toast({
-        title: "Donation successful!",
-        description: `Thank you for your donation of ${formatCurrency(summary.total)}`,
+        title: "Receipt uploaded successfully!",
+        description: `Your transaction has been submitted for verification. Transaction ID: ${result.transactionHistoryId.slice(0, 8)}`,
       });
 
       // Reset form after delay
       setTimeout(() => {
         handleClose();
-      }, 3000);
-      } else {
-        throw new Error(result.error || 'Payment processing failed');
-      }
-
+      }, 5000);
     } catch (error) {
-      console.error('Payment processing error:', error);
+      console.error('Receipt upload error:', error);
       toast({
-        title: "Payment failed",
-        description: error instanceof Error ? error.message : "There was an error processing your payment. Please try again.",
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "There was an error uploading your receipt. Please try again.",
         variant: "destructive",
       });
       setStep('payment');
+      setUploadStep('upload');
     } finally {
-      setIsProcessing(false);
+      setIsUploadingReceipt(false);
     }
+  };
+
+  const handleContinueToUpload = () => {
+    if (!selectedMethod) {
+      toast({
+        title: "Payment method required",
+        description: "Please select a payment method",
+        variant: "destructive",
+      });
+      return;
+    }
+    setUploadStep('upload');
   };
 
   const handleClose = () => {
     setAmount('');
     setSelectedMethod('');
     setPhoneNumber('');
+    setReceiptFile(null);
+    setReceiptPreview(null);
+    setTransactionId(null);
     setStep('amount');
+    setUploadStep('payment');
     setIsProcessing(false);
+    setIsUploadingReceipt(false);
     onClose();
   };
 
@@ -157,6 +315,9 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
   };
 
   const summary = amount ? calculateDonationSummary(parseFloat(amount)) : null;
+  
+  // Check if campaign goal is reached
+  const isGoalReached = campaign ? Number(campaign.raised || 0) >= Number(campaign.goal || 0) : false;
 
   const renderMethodIcon = (id: string) => {
     switch (id) {
@@ -195,7 +356,40 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
 
         <div className="flex-1 overflow-y-auto min-h-0">
         <AnimatePresence mode="wait">
-          {step === 'amount' && (
+          {/* Show goal achieved message if goal is reached */}
+          {isGoalReached && campaign && (
+            <motion.div
+              key="goal-achieved"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="p-6 space-y-6"
+            >
+              <div className="text-center py-12">
+                <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Check className="w-10 h-10 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">
+                  Goal Achieved! 🎉
+                </h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-6">
+                  This campaign has successfully reached its fundraising goal of {formatCurrency(Number(campaign.goal || 0))}.
+                </p>
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-600 dark:text-slate-300">Total Raised:</span>
+                    <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                      {formatCurrency(Number(campaign.raised || 0))}
+                    </span>
+                  </div>
+                </div>
+                <Button onClick={handleClose} variant="outline" className="mt-4">
+                  Close
+                </Button>
+              </div>
+            </motion.div>
+          )}
+          {!isGoalReached && step === 'amount' && (
             <motion.div
               key="amount"
               initial={{ opacity: 0, x: 20 }}
@@ -304,11 +498,11 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
                               <div className="flex items-center space-x-4">
                                 <div className="flex items-center space-x-1 text-slate-600 dark:text-slate-400">
                                   <Users className="w-4 h-4" />
-                                  <span>1,247 supporters</span>
+                                  <span>{supporterCount.toLocaleString()} {supporterCount === 1 ? 'supporter' : 'supporters'}</span>
                                 </div>
                                 <div className="flex items-center space-x-1 text-slate-600 dark:text-slate-400">
                                   <Clock className="w-4 h-4" />
-                                  <span>15 days left</span>
+                                  <span>{daysLeft} {daysLeft === 1 ? 'day' : 'days'} left</span>
                                 </div>
                               </div>
                               <div className="text-slate-600 dark:text-slate-400">
@@ -454,7 +648,7 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
             </motion.div>
           )}
 
-          {step === 'payment' && (
+          {!isGoalReached && step === 'payment' && (
             <motion.div
               key="payment"
               initial={{ opacity: 0, x: 20 }}
@@ -469,88 +663,232 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
                     <Label className="text-lg font-semibold text-slate-800 dark:text-slate-200">Select Payment Method</Label>
                   </div>
                   
-                  <div className="space-y-4">
-                  {PAYMENT_METHODS
-                    .filter((method) => {
-                      if (!campaign?.paymentMethods || campaign.paymentMethods.length === 0) return true;
-                      return campaign.paymentMethods.includes(method.id);
-                    })
-                    .map((method) => (
-                      <button
-                        key={method.id}
-                        onClick={() => setSelectedMethod(method.id)}
-                          className={`w-full flex items-center justify-between p-4 border-2 rounded-xl transition-all hover:scale-105 ${
-                          selectedMethod === method.id
-                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg'
-                              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                        }`}
-                        data-testid={`button-payment-${method.id}`}
-                      >
-                          <div className="flex items-center space-x-4">
-                            <div className={`w-12 h-12 ${method.color} rounded-xl flex items-center justify-center shadow-lg`}>
-                              {renderMethodIcon(method.id)}
-                          </div>
-                          <div className="text-left">
-                              <p className="font-semibold text-slate-800 dark:text-slate-200">{method.name}</p>
-                              <p className="text-sm text-slate-600 dark:text-slate-400">
-                              {method.type === 'jazzcash' && 'Mobile wallet payment'}
-                              {method.type === 'easypaisa' && 'Digital wallet payment'}
-                              {method.type === 'bank' && 'Direct bank payment'}
-                              {method.type === 'raast' && 'Instant bank transfer (RAAST)'}
-                            </p>
-                          </div>
-                        </div>
-                        {selectedMethod === method.id && (
-                            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                              <Check className="w-4 h-4 text-white" />
+                  {campaignPaymentMethods.length > 0 ? (
+                    <div className="space-y-4">
+                      {campaignPaymentMethods.map((method: any) => {
+                        const methodInfo = PAYMENT_METHODS.find(m => m.id === method.type);
+                        return (
+                          <button
+                            key={method.id}
+                            onClick={() => setSelectedMethod(method.type)}
+                            className={`w-full flex items-center justify-between p-4 border-2 rounded-xl transition-all hover:scale-105 ${
+                              selectedMethod === method.type
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg'
+                                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                            }`}
+                            data-testid={`button-payment-${method.type}`}
+                          >
+                            <div className="flex items-center space-x-4">
+                              <div className={`w-12 h-12 ${methodInfo?.color || 'bg-gray-500'} rounded-xl flex items-center justify-center shadow-lg`}>
+                                {renderMethodIcon(method.type)}
+                              </div>
+                              <div className="text-left">
+                                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                                  {methodInfo?.name || method.type}
+                                </p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                  Account: {method.accountNumber}
+                                </p>
+                                {method.userName && (
+                                  <p className="text-xs text-slate-500 dark:text-slate-500">
+                                    Holder: {method.userName}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                        )}
-                      </button>
-                    ))}
-                </div>
+                            {selectedMethod === method.type && (
+                              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                <Check className="w-4 h-4 text-white" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-slate-600 dark:text-slate-400">
+                        No payment methods available for this campaign.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
-              {(selectedMethod === 'jazzcash' || selectedMethod === 'easypaisa') && (
+              {selectedPaymentMethodDetails && (selectedMethod === 'jazzcash' || selectedMethod === 'easypaisa') && (
                 <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-lg">
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-2 mb-4">
                       <Smartphone className="w-5 h-5 text-blue-500" />
-                      <Label className="text-lg font-semibold text-slate-800 dark:text-slate-200">Mobile Wallet Details</Label>
+                      <Label className="text-lg font-semibold text-slate-800 dark:text-slate-200">Payment Details</Label>
                     </div>
-                  <Input
-                    type="tel"
-                    placeholder="03XXXXXXXXX"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                      className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 h-12 text-lg"
-                    data-testid="input-phone-number"
-                  />
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                      Enter your mobile number for {selectedMethod === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'} wallet
-                    </p>
+                    
+                    <div className="space-y-4">
+                      <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Account Number:</span>
+                          <span className="text-lg font-bold text-slate-800 dark:text-slate-200">{selectedPaymentMethodDetails.accountNumber}</span>
+                        </div>
+                        {selectedPaymentMethodDetails.userName && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Account Holder:</span>
+                            <span className="text-base font-semibold text-slate-800 dark:text-slate-200">{selectedPaymentMethodDetails.userName}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {selectedPaymentMethodDetails.qrImageUrl && (
+                        <div className="text-center">
+                          <Label className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2 block">Scan QR Code to Pay</Label>
+                          <div className="flex justify-center">
+                            <img
+                              src={selectedPaymentMethodDetails.qrImageUrl}
+                              alt="QR Code"
+                              className="w-48 h-48 object-contain border-2 border-slate-200 dark:border-slate-700 rounded-lg p-2 bg-white"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          <strong>Instructions:</strong> Send the donation amount ({formatCurrency(parseFloat(amount || '0'))}) to the account number above or scan the QR code.
+                        </p>
+                      </div>
+
+                      <Input
+                        type="tel"
+                        placeholder="03XXXXXXXXX (Your phone number - optional)"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 h-12 text-lg"
+                        data-testid="input-phone-number"
+                      />
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Enter your mobile number (optional) for transaction confirmation
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               )}
 
-              <div className="flex space-x-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep('amount')}
-                  className="flex-1 h-12 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
-                  data-testid="button-back"
-                >
-                  Back
-                </Button>
-                <Button
-                  onClick={handlePaymentSubmit}
-                  className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                  data-testid="button-pay-now"
-                >
-                  <Heart className="w-5 h-5 mr-2" />
-                  Pay Now
-                </Button>
-              </div>
+              {uploadStep === 'payment' && (
+                <div className="flex space-x-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep('amount')}
+                    className="flex-1 h-12 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    data-testid="button-back"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleContinueToUpload}
+                    className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                    data-testid="button-continue-upload"
+                  >
+                    Continue to Upload Receipt
+                  </Button>
+                </div>
+              )}
+
+              {uploadStep === 'upload' && (
+                <div className="space-y-4">
+                  <Card className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-lg">
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-2 mb-4">
+                        <Upload className="w-5 h-5 text-blue-500" />
+                        <Label className="text-lg font-semibold text-slate-800 dark:text-slate-200">Upload Receipt</Label>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="receipt-upload" className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2 block">
+                            Upload your payment receipt
+                          </Label>
+                          <input
+                            type="file"
+                            id="receipt-upload"
+                            accept="image/*"
+                            onChange={handleReceiptFileChange}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="receipt-upload"
+                            className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg cursor-pointer hover:border-blue-500 transition-colors bg-slate-50 dark:bg-slate-900"
+                          >
+                            {receiptPreview ? (
+                              <div className="relative w-full h-full">
+                                <img
+                                  src={receiptPreview}
+                                  alt="Receipt preview"
+                                  className="w-full h-full object-contain rounded-lg"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReceiptFile(null);
+                                    setReceiptPreview(null);
+                                  }}
+                                  className="absolute top-2 right-2 bg-white/90 hover:bg-white"
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <Upload className="w-10 h-10 mb-3 text-slate-400" />
+                                <p className="mb-2 text-sm text-slate-500 dark:text-slate-400">
+                                  <span className="font-semibold">Click to upload</span> or drag and drop
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">PNG, JPG, GIF up to 10MB</p>
+                              </div>
+                            )}
+                          </label>
+                        </div>
+
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            <strong>Instructions:</strong> After making the payment using the QR code or account number above, upload a screenshot or photo of your payment receipt.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="flex space-x-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setUploadStep('payment')}
+                      className="flex-1 h-12 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                      data-testid="button-back-upload"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={handleReceiptUpload}
+                      disabled={!receiptFile || isUploadingReceipt}
+                      className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                      data-testid="button-upload-receipt"
+                    >
+                      {isUploadingReceipt ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-5 h-5 mr-2" />
+                          Upload Receipt
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -586,22 +924,27 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
               >
                 <Check className="w-10 h-10 text-white" />
               </motion.div>
-              <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-3">Donation Successful!</h3>
+              <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-3">Receipt Uploaded Successfully!</h3>
               <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-                Thank you for your generous donation. Your contribution will make a real difference in helping those in need.
+                Your receipt has been submitted for verification. Your community leader will review it and verify your donation. You will be notified once it's verified.
               </p>
               {summary && (
                 <Card className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-800 shadow-lg">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-center space-x-2 mb-3">
                       <Gift className="w-5 h-5 text-green-500" />
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">Donation Details</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">Transaction Details</span>
                     </div>
                     <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                       {formatCurrency(summary.total)}
                     </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                      Transaction ID: txn_{Date.now().toString().slice(-8)}
+                    {transactionId && (
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                        Transaction ID: {transactionId.slice(0, 8)}...
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                      Status: Pending Verification
                     </p>
                   </CardContent>
                 </Card>

@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, timestamp, integer, boolean, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+// @ts-ignore - zod types are available at runtime
 import { z } from "zod";
 
 export const users = pgTable("users", {
@@ -79,6 +80,39 @@ export const comments = pgTable("comments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Transaction History - Main transaction records (Firestore: transactionHistory)
+export const transactionHistory = pgTable("transaction_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  transId: varchar("trans_id").notNull().unique(), // Transaction ID (same as id)
+  campaignId: varchar("campaign_id").notNull(),
+  requiredAmount: decimal("required_amount", { precision: 12, scale: 2 }).notNull(),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+  transactionDetailId: varchar("transaction_detail_id").notNull(),
+  status: text("status").notNull().default("pending"), // pending, verified, rejected
+  communityId: varchar("community_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Transaction Details - Detailed transaction information (Firestore: transactionDetails)
+export const transactionDetails = pgTable("transaction_details", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  transactionHistoryId: varchar("transaction_history_id").notNull(),
+  senderName: text("sender_name").notNull(),
+  senderId: varchar("sender_id").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  time: timestamp("time").notNull(),
+  receiptImage: text("receipt_image").notNull(),
+  isPaymentVerified: boolean("is_payment_verified").default(false),
+  paymentMethod: text("payment_method").notNull(), // jazzcash, easypaisa, bank, raast
+  communityId: varchar("community_id").notNull(),
+  verifiedBy: varchar("verified_by"),
+  verifiedAt: timestamp("verified_at"),
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -121,6 +155,19 @@ export const insertCommentSchema = createInsertSchema(comments).omit({
   createdAt: true,
 });
 
+export const insertTransactionHistorySchema = createInsertSchema(transactionHistory).omit({
+  id: true,
+  transId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTransactionDetailsSchema = createInsertSchema(transactionDetails).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -142,3 +189,9 @@ export type InsertLike = z.infer<typeof insertLikeSchema>;
 
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
+
+export type TransactionHistory = typeof transactionHistory.$inferSelect;
+export type InsertTransactionHistory = z.infer<typeof insertTransactionHistorySchema>;
+
+export type TransactionDetails = typeof transactionDetails.$inferSelect;
+export type InsertTransactionDetails = z.infer<typeof insertTransactionDetailsSchema>;

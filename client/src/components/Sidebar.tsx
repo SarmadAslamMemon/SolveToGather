@@ -26,7 +26,8 @@ import {
   Newspaper,
   Flag,
   TrendingUp,
-  CreditCard
+  CreditCard,
+  Clock
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -106,6 +107,7 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
         { id: 'admin-issues', label: 'All Issues', icon: AlertTriangle },
         { id: 'admin-campaigns', label: 'All Campaigns', icon: DollarSign },
         { id: 'admin-payment-methods', label: 'Payment Methods', icon: CreditCard },
+        { id: 'admin-transactions', label: 'Transactions', icon: Clock },
         { id: 'admin-reports', label: 'Reports', icon: Flag },
         { id: 'create-issue', label: 'Add Issue', icon: Plus },
         { id: 'create-campaign', label: 'Raise Campaign', icon: Megaphone },
@@ -247,7 +249,7 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
         )}
 
         {/* Navigation Menu */}
-        <nav className="space-y-2">
+        <nav className="space-y-1">
           {items.map((item, index) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
@@ -257,7 +259,9 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
                 key={item.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 + index * 0.1 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="mb-1"
               >
                 <button
                   onClick={() => {
@@ -272,6 +276,7 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
                         return;
                       }
                     }
+                    console.log('Navigating to:', item.id); // Debug log
                     onViewChange(item.id);
                   }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-md transition-colors ${
@@ -296,12 +301,18 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
           {/* Notifications - hidden for super admin */}
           {!isSuperUser && (
             <motion.div
+              key="notifications"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 + items.length * 0.1 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+              className="mb-1"
             >
               <button
-                onClick={() => onViewChange('notifications')}
+                onClick={() => {
+                  console.log('Navigating to notifications'); // Debug log
+                  onViewChange('notifications');
+                }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-md transition-colors ${
                   currentView === 'notifications'
                     ? 'bg-accent text-accent-foreground'

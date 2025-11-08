@@ -44,11 +44,20 @@ interface PaymentMethod {
   userNic: string;
   qrImageUrl: string;
   isActive: boolean;
+  communityId?: string;
+  leaderId?: string;
   createdAt: any;
   updatedAt: any;
 }
 
 export default function PaymentMethods() {
+  console.log('[PaymentMethods] Component rendered');
+  console.log('[PaymentMethods] Current time:', new Date().toISOString());
+  
+  // Log the component stack
+  console.group('PaymentMethods Render Stack:');
+  console.trace('PaymentMethods rendered from:');
+  console.groupEnd();
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -68,23 +77,82 @@ export default function PaymentMethods() {
     isActive: true
   });
 
-  // Fetch payment methods
+  // Fetch payment methods with detailed logging
   useEffect(() => {
+    console.log('[PaymentMethods] Component mounted or updated');
+    console.log('[PaymentMethods] Current user:', currentUser);
+    console.log('[PaymentMethods] Current user community ID:', currentUser?.communityId);
+    
     const fetchPaymentMethods = async () => {
-      if (!currentUser?.communityId) return;
+      if (!currentUser?.communityId) {
+        console.log('[PaymentMethods] No community ID available, cannot fetch payment methods');
+        return;
+      }
 
       try {
+        console.log('[PaymentMethods] Starting to fetch payment methods...');
         setLoading(true);
+        
+        // First, try to get all documents without any filters to test the connection
+        console.log('[PaymentMethods] Attempting to fetch ALL payment methods (testing connection)...');
+        const allDocsSnapshot = await getDocs(collection(db, 'paymentMethod'));
+        console.log(`[PaymentMethods] Found ${allDocsSnapshot.size} total payment methods in the collection`);
+        
+        if (allDocsSnapshot.size > 0) {
+          console.log('[PaymentMethods] First document sample:', allDocsSnapshot.docs[0].id, allDocsSnapshot.docs[0].data());
+        }
+        
+        // Now try with the community filter
+        console.log(`[PaymentMethods] Now querying for communityId: ${currentUser.communityId}`);
         const q = query(
-          collection(db, 'paymentMethods'),
-          where('communityId', '==', currentUser.communityId),
-          orderBy('createdAt', 'desc')
+          collection(db, 'paymentMethod'),
+          where('communityId', '==', currentUser.communityId)
         );
+        
+        console.log('[PaymentMethods] Executing query...');
         const snapshot = await getDocs(q);
-        const methods = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as PaymentMethod[];
+        console.log(`[PaymentMethods] Query returned ${snapshot.size} documents`);
+        
+        if (snapshot.empty) {
+          console.warn('[PaymentMethods] No documents found for the community. This could be due to:');
+          console.warn(`1. No documents exist in the 'paymentMethod' collection`);
+          console.warn(`2. Documents exist but don't have a 'communityId' field`);
+          console.warn(`3. The 'communityId' in the documents doesn't match: ${currentUser.communityId}`);
+          console.warn('4. Security rules might be preventing access to the documents');
+          
+          // Log all available documents for debugging
+          console.log('[PaymentMethods] Available documents in collection:');
+          allDocsSnapshot.forEach(doc => {
+            console.log(`- ${doc.id}:`, doc.data());
+          });
+        }
+        
+        const methods = snapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log(`[PaymentMethods] Processing document ${doc.id}:`, data);
+          
+          // Convert Firestore timestamps to Date objects if needed
+          const processTimestamp = (timestamp: any) => {
+            if (!timestamp) return new Date();
+            return timestamp.toDate ? timestamp.toDate() : timestamp;
+          };
+          
+          return {
+            id: doc.id,
+            type: data.type || 'jazzcash', // Default type
+            accountNumber: data.accountNumber || '',
+            userName: data.userName || '',
+            userNic: data.userNic || '',
+            qrImageUrl: data.qrImageUrl || '',
+            isActive: data.isActive !== undefined ? data.isActive : true,
+            communityId: data.communityId || currentUser.communityId,
+            leaderId: data.leaderId || currentUser.id,
+            createdAt: processTimestamp(data.createdAt),
+            updatedAt: processTimestamp(data.updatedAt)
+          } as PaymentMethod;
+        });
+        
+        console.log(`[PaymentMethods] Processed ${methods.length} payment methods`);
         setPaymentMethods(methods);
       } catch (error) {
         console.error('Error fetching payment methods:', error);
@@ -133,11 +201,12 @@ export default function PaymentMethods() {
       const paymentMethodData = {
         ...formData,
         communityId: currentUser.communityId,
+        leaderId: currentUser.id, // Store the leader ID
         createdAt: new Date(),
         updatedAt: new Date()
       };
 
-      await addDoc(collection(db, 'paymentMethods'), paymentMethodData);
+      await addDoc(collection(db, 'paymentMethod'), paymentMethodData);
       
       toast({
         title: "Success",
@@ -149,7 +218,7 @@ export default function PaymentMethods() {
       
       // Refresh the list
       const q = query(
-        collection(db, 'paymentMethods'),
+        collection(db, 'paymentMethod'),  // Changed from 'paymentMethods' to 'paymentMethod'
         where('communityId', '==', currentUser.communityId),
         orderBy('createdAt', 'desc')
       );
@@ -178,7 +247,7 @@ export default function PaymentMethods() {
         updatedAt: new Date()
       };
 
-      await updateDoc(doc(db, 'paymentMethods', editingMethod.id), paymentMethodData);
+      await updateDoc(doc(db, 'paymentMethod', editingMethod.id), paymentMethodData);
       
       toast({
         title: "Success",
@@ -213,7 +282,7 @@ export default function PaymentMethods() {
 
   const handleDeletePaymentMethod = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'paymentMethods', id));
+      await deleteDoc(doc(db, 'paymentMethod', id));
       
       toast({
         title: "Success",
@@ -307,9 +376,35 @@ export default function PaymentMethods() {
   };
 
   if (loading) {
-    return <LoadingSkeleton type="dashboard" />;
+    return (
+      <div className="ml-64 p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gradient mb-2">Payment Methods</h1>
+            <p className="text-muted-foreground">Loading payment methods...</p>
+          </div>
+        </div>
+        <LoadingSkeleton type="dashboard" />
+      </div>
+    );
   }
 
+  // Log before render
+  console.log('[PaymentMethods] Rendering with payment methods:', {
+    count: paymentMethods.length,
+    methods: paymentMethods,
+    currentUserCommunityId: currentUser?.communityId,
+    hasPaymentMethods: paymentMethods.length > 0
+  });
+  
+  // Log the first payment method's structure if available
+  if (paymentMethods.length > 0) {
+    console.log('[PaymentMethods] First payment method structure:', {
+      keys: Object.keys(paymentMethods[0]),
+      values: paymentMethods[0]
+    });
+  }
+  
   return (
     <div className="ml-64 p-6">
       {/* Header */}

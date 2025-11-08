@@ -1,12 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { createCampaign, createCampaignWithNotification, uploadFile } from '@/services/firebase';
+import { createCampaign, createCampaignWithNotification, uploadFile, getPaymentMethods } from '@/services/firebase';
 
 interface CreateCampaignModalProps {
   isOpen: boolean;
@@ -22,7 +23,26 @@ export default function CreateCampaignModal({ isOpen, onClose }: CreateCampaignM
   const [duration, setDuration] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<any[]>([]);
+  const [selectedPaymentMethods, setSelectedPaymentMethods] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Fetch payment methods when modal opens
+  useEffect(() => {
+    const fetchPaymentMethods = async () => {
+      if (isOpen && currentUser?.communityId) {
+        try {
+          const methods = await getPaymentMethods(currentUser.communityId, currentUser.id);
+          setAvailablePaymentMethods(methods);
+          // Auto-select all available payment methods
+          setSelectedPaymentMethods(methods.map((m: any) => m.type));
+        } catch (error) {
+          console.error('Error fetching payment methods:', error);
+        }
+      }
+    };
+    fetchPaymentMethods();
+  }, [isOpen, currentUser?.communityId, currentUser?.id]);
 
   const resetForm = () => {
     setTitle('');
@@ -30,6 +50,7 @@ export default function CreateCampaignModal({ isOpen, onClose }: CreateCampaignM
     setGoal('');
     setDuration('');
     setSelectedFiles([]);
+    setSelectedPaymentMethods([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -60,7 +81,7 @@ export default function CreateCampaignModal({ isOpen, onClose }: CreateCampaignM
         communityId: currentUser.communityId,
         authorId: currentUser.id,
         images: imageUrls,
-        paymentMethods: ['jazzcash', 'bank_transfer']
+        paymentMethods: selectedPaymentMethods.length > 0 ? selectedPaymentMethods : ['jazzcash', 'easypaisa'] // Fallback to default
       });
 
       toast({ title: 'Campaign launched', description: 'Your campaign is now live.' });
@@ -136,6 +157,45 @@ export default function CreateCampaignModal({ isOpen, onClose }: CreateCampaignM
             <Label className="text-card-foreground">Upload Images (optional)</Label>
             <Input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFilesChange} />
           </div>
+          {availablePaymentMethods.length > 0 && (
+            <div>
+              <Label className="text-card-foreground mb-2 block">Payment Methods</Label>
+              <p className="text-sm text-muted-foreground mb-3">
+                Select payment methods available for this campaign (added by your community leader)
+              </p>
+              <div className="space-y-2">
+                {availablePaymentMethods.map((method) => (
+                  <div key={method.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`payment-${method.id}`}
+                      checked={selectedPaymentMethods.includes(method.type)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedPaymentMethods([...selectedPaymentMethods, method.type]);
+                        } else {
+                          setSelectedPaymentMethods(selectedPaymentMethods.filter(t => t !== method.type));
+                        }
+                      }}
+                    />
+                    <Label
+                      htmlFor={`payment-${method.id}`}
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      {method.type === 'jazzcash' ? 'JazzCash' : method.type === 'easypaisa' ? 'EasyPaisa' : method.type}
+                      {method.accountNumber && ` (${method.accountNumber})`}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {availablePaymentMethods.length === 0 && currentUser?.communityId && (
+            <div className="p-3 bg-muted rounded-md">
+              <p className="text-sm text-muted-foreground">
+                No payment methods available. Ask your community leader to add payment methods.
+              </p>
+            </div>
+          )}
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="outline" onClick={() => { resetForm(); onClose(); }} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Launching...' : 'Launch Campaign'}</Button>

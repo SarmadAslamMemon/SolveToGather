@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { createIssue, createIssueWithNotification, createCampaign, createCampaignWithNotification, uploadFile } from '@/services/firebase';
+import { createIssue, createIssueWithNotification, createCampaign, createCampaignWithNotification, uploadFile, getPaymentMethods, getPendingTransactions } from '@/services/firebase';
 import { useToast } from '@/hooks/use-toast';
 import IssueCard from './IssueCard';
 import CampaignCard from './CampaignCard';
@@ -22,6 +22,7 @@ import ReportsList from '@/components/views/ReportsList';
 import CampaignsList from '@/components/views/CampaignsList';
 import AdminActivityDashboard from './AdminActivityDashboard';
 import PaymentMethods from './PaymentMethods';
+import TransactionVerification from './TransactionVerification';
 import { useIssues, useCampaigns } from '@/hooks/useFirestore';
 import { useComments, useAddComment, useDeleteComment, usePostLikes } from '@/hooks/useComments';
 import { getDoc, doc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
@@ -65,6 +66,13 @@ interface AdminPanelProps {
 }
 
 export default function AdminPanel({ currentView }: AdminPanelProps) {
+  console.log('[AdminPanel] Rendering with currentView:', currentView);
+  console.log('[AdminPanel] Current time:', new Date().toISOString());
+  
+  // Log the component stack
+  console.group('AdminPanel Render Stack:');
+  console.trace('AdminPanel rendered from:');
+  console.groupEnd();
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
@@ -104,8 +112,24 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
 
   const [isCreatingIssue, setIsCreatingIssue] = useState(false);
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<any[]>([]);
   const issueFileInputRef = useRef<HTMLInputElement | null>(null);
   const campaignFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Fetch payment methods when component mounts or when creating campaign
+  useEffect(() => {
+    const fetchPaymentMethods = async () => {
+      if (currentUser?.communityId) {
+        try {
+          const methods = await getPaymentMethods(currentUser.communityId, currentUser.id);
+          setAvailablePaymentMethods(methods);
+        } catch (error) {
+          console.error('Error fetching payment methods:', error);
+        }
+      }
+    };
+    fetchPaymentMethods();
+  }, [currentUser?.communityId, currentUser?.id]);
 
   // Real admin stats calculated from database
   const [adminStats, setAdminStats] = useState({
@@ -113,6 +137,7 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
     activeCampaigns: 0,
     totalDonations: 0,
     pendingIssues: 0,
+    pendingTransactions: 0,
   });
   const [statsLoading, setStatsLoading] = useState(true);
 
@@ -154,11 +179,15 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
         const issuesSnapshot = await getDocs(issuesQuery);
         const pendingIssues = issuesSnapshot.size;
         
+        // Get pending transactions for campaigns created by this leader
+        const pendingTransactions = await getPendingTransactions(currentUser.communityId, currentUser.id);
+        
         setAdminStats({
           totalUsers,
           activeCampaigns,
           totalDonations,
           pendingIssues,
+          pendingTransactions: pendingTransactions.length,
         });
       } catch (error) {
         console.error('Error calculating admin stats:', error);
@@ -402,7 +431,7 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+          className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8"
         >
         <Card className="bg-card border-border" data-testid="card-admin-stats-users">
           <CardContent className="p-6">
@@ -457,6 +486,20 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
               </span>
             </div>
             <h3 className="font-medium text-card-foreground">Pending Issues</h3>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border" data-testid="card-admin-stats-transactions">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                <Clock className="w-6 h-6 text-orange-500" />
+              </div>
+              <span className="text-2xl font-bold text-card-foreground" data-testid="text-pending-transactions">
+                {adminStats.pendingTransactions}
+              </span>
+            </div>
+            <h3 className="font-medium text-card-foreground">Pending Transactions</h3>
           </CardContent>
         </Card>
         </motion.div>
@@ -838,50 +881,38 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
 
               <div>
                 <Label className="text-card-foreground">Payment Methods</Label>
-                <div className="grid grid-cols-1 gap-2 mt-2">
-                  <label className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={newCampaign.paymentMethods.includes('jazzcash')}
-                      onCheckedChange={(checked) => {
-                        setNewCampaign(prev => ({
-                          ...prev,
-                          paymentMethods: checked
-                            ? Array.from(new Set([...(prev.paymentMethods || []), 'jazzcash']))
-                            : (prev.paymentMethods || []).filter(m => m !== 'jazzcash')
-                        }));
-                      }}
-                    />
-                    <span>JazzCash</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={newCampaign.paymentMethods.includes('easypaisa')}
-                      onCheckedChange={(checked) => {
-                        setNewCampaign(prev => ({
-                          ...prev,
-                          paymentMethods: checked
-                            ? Array.from(new Set([...(prev.paymentMethods || []), 'easypaisa']))
-                            : (prev.paymentMethods || []).filter(m => m !== 'easypaisa')
-                        }));
-                      }}
-                    />
-                    <span>EasyPaisa</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={newCampaign.paymentMethods.includes('raast')}
-                      onCheckedChange={(checked) => {
-                        setNewCampaign(prev => ({
-                          ...prev,
-                          paymentMethods: checked
-                            ? Array.from(new Set([...(prev.paymentMethods || []), 'raast']))
-                            : (prev.paymentMethods || []).filter(m => m !== 'raast')
-                        }));
-                      }}
-                    />
-                    <span>RAAST</span>
-                  </label>
-                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Select payment methods available for this campaign (from your added payment methods)
+                </p>
+                {availablePaymentMethods.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2 mt-2">
+                    {availablePaymentMethods.map((method) => (
+                      <label key={method.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={newCampaign.paymentMethods.includes(method.type)}
+                          onCheckedChange={(checked) => {
+                            setNewCampaign(prev => ({
+                              ...prev,
+                              paymentMethods: checked
+                                ? Array.from(new Set([...(prev.paymentMethods || []), method.type]))
+                                : (prev.paymentMethods || []).filter(m => m !== method.type)
+                            }));
+                          }}
+                        />
+                        <span>
+                          {method.type === 'jazzcash' ? 'JazzCash' : method.type === 'easypaisa' ? 'EasyPaisa' : method.type}
+                          {method.accountNumber && ` (${method.accountNumber})`}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-muted rounded-md mt-2">
+                    <p className="text-sm text-muted-foreground">
+                      No payment methods available. Please add payment methods first from the Payment Methods section.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <Button
@@ -906,16 +937,40 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
     </>
   );
 
+  // Log the view that will be rendered
+  console.log('[AdminPanel] Will render view:', currentView);
+  
   return (
     <div className="ml-64 p-6">
+      <div style={{ display: 'none' }} data-testid="admin-current-view">{currentView}</div>
       {currentView === 'admin-dashboard' && renderStatistics()}
-      {currentView === 'admin-activity' && <AdminActivityDashboard />}
-      {currentView === 'admin-issues' && <IssuesList />}
-      {currentView === 'admin-campaigns' && <CampaignsList />}
-      {currentView === 'admin-payment-methods' && <PaymentMethods />}
-      {currentView === 'admin-reports' && <ReportsList mode="leader" />}
-      {currentView === 'create-issue' && renderCreateIssue()}
-      {currentView === 'create-campaign' && renderCreateCampaign()}
+      <AnimatePresence mode="wait" onExitComplete={() => {
+        console.log('[AdminPanel] Animation complete for view:', currentView);
+      }}>
+        <motion.div
+          key={currentView}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+          style={{ height: '100%' }}
+          onAnimationStart={() => {
+            console.log('[AdminPanel] Animation started for view:', currentView);
+          }}
+          onAnimationComplete={() => {
+            console.log('[AdminPanel] Animation completed for view:', currentView);
+          }}
+        >
+          {currentView === 'admin-activity' && <AdminActivityDashboard />}
+          {currentView === 'admin-issues' && <IssuesList />}
+          {currentView === 'admin-campaigns' && <CampaignsList />}
+          {currentView === 'admin-payment-methods' && <PaymentMethods />}
+          {currentView === 'admin-transactions' && <TransactionVerification />}
+          {currentView === 'admin-reports' && <ReportsList mode="leader" />}
+          {currentView === 'create-issue' && renderCreateIssue()}
+          {currentView === 'create-campaign' && renderCreateCampaign()}
+        </motion.div>
+      </AnimatePresence>
 
       {/* Donation Modal */}
       <DonationModal
@@ -1060,8 +1115,8 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
                       <span>Share</span>
                     </Button>
 
-                    {/* Donate Button for Campaigns */}
-                    {openPost.goal && (
+                    {/* Donate Button for Campaigns - Only show if goal not reached */}
+                    {openPost.goal && Number(openPost.raised || 0) < Number(openPost.goal || 0) && (
                       <Button
                         onClick={() => {
                           handleClosePost();
@@ -1072,6 +1127,14 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
                         <Heart className="w-4 h-4 mr-2" />
                         Donate Now
                       </Button>
+                    )}
+                    {/* Goal Achieved Message for Campaigns */}
+                    {openPost.goal && Number(openPost.raised || 0) >= Number(openPost.goal || 0) && (
+                      <div className="ml-auto bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-2 text-center">
+                        <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                          ✓ Goal Achieved!
+                        </p>
+                      </div>
                     )}
                   </div>
 

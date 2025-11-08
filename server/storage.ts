@@ -1,7 +1,7 @@
 import { type Community, type InsertCommunity, type User, type InsertUser } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db, COLLECTIONS } from "./firebase";
-import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, getDoc, query, where, limit, setDoc } from 'firebase/firestore';
+// Firebase Admin SDK is used via db object from ./firebase
 import type { FirebaseUser, FirebaseCommunity } from "./firebase";
 
 export interface IStorage {
@@ -119,7 +119,7 @@ export class FirebaseStorage implements IStorage {
         updatedAt: now,
       } as any;
       
-      const docRef = await db.collection(COLLECTIONS.USERS).add(user as any);
+      await db.collection(COLLECTIONS.USERS).add(user as any);
       
       return {
         id: user.id,

@@ -339,11 +339,13 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             ) : (
-              campaigns.slice(0, 4).map((campaign) => (
+              campaigns.slice(0, 4).map((campaign) => {
+                const isGoalReached = Number(campaign.raised || 0) >= Number(campaign.goal || 0);
+                return (
                 <Card 
                   key={campaign.id} 
-                  className="bg-card border-border hover:shadow-md transition-shadow duration-200 cursor-pointer"
-                  onClick={() => handleDonate(campaign.id)}
+                  className={`bg-card border-border transition-shadow duration-200 ${!isGoalReached ? 'hover:shadow-md cursor-pointer' : 'opacity-75'}`}
+                  onClick={() => !isGoalReached && handleDonate(campaign.id)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start space-x-3">
@@ -376,9 +378,17 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
+                    {isGoalReached && (
+                      <div className="mt-2 bg-green-500/10 border border-green-500/20 rounded px-2 py-1 text-center">
+                        <p className="text-xs font-medium text-green-600 dark:text-green-400">
+                          ✓ Goal Achieved
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              ))
+                );
+              })
             )}
           </div>
 
@@ -540,8 +550,8 @@ export default function Dashboard() {
                       <span>Share</span>
                     </Button>
 
-                    {/* Donate Button for Campaigns */}
-                    {openPost.goal && (
+                    {/* Donate Button for Campaigns - Only show if goal not reached */}
+                    {openPost.goal && Number(openPost.raised || 0) < Number(openPost.goal || 0) && (
                       <Button
                         onClick={() => {
                           handleClosePost();
@@ -552,6 +562,14 @@ export default function Dashboard() {
                         <Heart className="w-4 h-4 mr-2" />
                         Donate Now
                       </Button>
+                    )}
+                    {/* Goal Achieved Message for Campaigns */}
+                    {openPost.goal && Number(openPost.raised || 0) >= Number(openPost.goal || 0) && (
+                      <div className="ml-auto bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-2 text-center">
+                        <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                          ✓ Goal Achieved!
+                        </p>
+                      </div>
                     )}
                   </div>
 

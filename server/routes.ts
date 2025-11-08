@@ -10,6 +10,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
 
+  // Health check endpoint for monitoring
+  app.get('/api/health', (_req, res) => {
+    res.json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
+
   // Community Routes
   app.get('/api/communities', async (req, res) => {
     try {
@@ -55,10 +64,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Community not found' });
       }
       
-      res.json(community);
+      return res.json(community);
     } catch (error) {
       console.error('Error fetching community:', error);
-      res.status(500).json({ error: 'Failed to fetch community' });
+      return res.status(500).json({ error: 'Failed to fetch community' });
     }
   });
 
@@ -76,10 +85,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const communityData = validationResult.data;
       const newCommunity = await storage.createCommunity(communityData);
       
-      res.status(201).json(newCommunity);
+      return res.status(201).json(newCommunity);
     } catch (error) {
       console.error('Error creating community:', error);
-      res.status(500).json({ error: 'Failed to create community' });
+      return res.status(500).json({ error: 'Failed to create community' });
     }
   });
 
@@ -112,10 +121,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteCommunity(id);
       console.log(`✅ Successfully deleted community: ${id}`);
       
-      res.status(204).send();
+      return res.status(204).send();
     } catch (error) {
       console.error('❌ Error deleting community:', error);
-      res.status(500).json({ error: 'Failed to delete community' });
+      return res.status(500).json({ error: 'Failed to delete community' });
     }
   });
 
@@ -149,10 +158,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.assignLeaderToCommunity(id, leaderId);
-      res.json({ message: 'Leader assigned successfully' });
+      return res.json({ message: 'Leader assigned successfully' });
     } catch (error) {
       console.error('Error assigning leader:', error);
-      res.status(500).json({ error: 'Failed to assign leader' });
+      return res.status(500).json({ error: 'Failed to assign leader' });
     }
   });
 
@@ -185,10 +194,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-      res.json(user);
+      return res.json(user);
     } catch (error) {
       console.error('Error fetching user:', error);
-      res.status(500).json({ error: 'Failed to fetch user' });
+      return res.status(500).json({ error: 'Failed to fetch user' });
     }
   });
 
@@ -205,10 +214,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update the user
       const updatedUser = await storage.updateUser(id, updates);
-      res.json(updatedUser);
+      return res.json(updatedUser);
     } catch (error) {
       console.error('Error updating user:', error);
-      res.status(500).json({ error: 'Failed to update user' });
+      return res.status(500).json({ error: 'Failed to update user' });
     }
   });
 
