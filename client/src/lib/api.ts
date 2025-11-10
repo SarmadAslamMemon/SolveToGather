@@ -1,5 +1,24 @@
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Auto-detect API URL: use VITE_API_URL if set and not a placeholder,
+// otherwise use current origin (works when frontend/backend are same server)
+function getApiBaseUrl(): string {
+  const envUrl = import.meta.env.VITE_API_URL;
+  
+  // If VITE_API_URL is set and not a placeholder, use it
+  if (envUrl && !envUrl.includes('your-app-name') && !envUrl.includes('your-deployed-url')) {
+    return envUrl;
+  }
+  
+  // In browser, use current origin (works for same-server deployments)
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  
+  // Fallback for SSR or build time
+  return 'http://localhost:5000';
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const api = {
   baseUrl: API_BASE_URL,
