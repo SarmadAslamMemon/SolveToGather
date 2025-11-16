@@ -95,12 +95,12 @@ export default function NotificationDropdown() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute right-0 top-full mt-2 w-96 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden"
+              className="absolute right-0 top-full mt-2 w-[90vw] sm:w-96 max-w-sm bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden"
             >
               {/* Header */}
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-card-foreground">Notifications</h3>
+              <div className="p-3 sm:p-4 border-b border-border flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm sm:text-base font-semibold text-card-foreground">Notifications</h3>
                   {unreadCount > 0 && (
                     <p className="text-xs text-muted-foreground">{unreadCount} unread</p>
                   )}
@@ -110,25 +110,29 @@ export default function NotificationDropdown() {
                     variant="ghost"
                     size="sm"
                     onClick={handleMarkAllAsRead}
-                    className="text-xs"
+                    className="text-xs flex-shrink-0 ml-2"
                   >
                     <Check className="w-3 h-3 mr-1" />
-                    Mark all read
+                    <span className="hidden sm:inline">Mark all read</span>
+                    <span className="sm:hidden">All</span>
                   </Button>
                 )}
               </div>
 
               {/* Notifications List */}
-              <div className="max-h-96 overflow-y-auto">
+              <div className="max-h-[60vh] sm:max-h-96 overflow-y-auto">
                 {loading ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
-                    <p className="text-sm">Loading notifications...</p>
+                  <div className="p-6 sm:p-8 text-center text-muted-foreground">
+                    <div className="animate-spin w-5 h-5 sm:w-6 sm:h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2" />
+                    <p className="text-xs sm:text-sm">Loading notifications...</p>
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p className="text-sm">No notifications yet</p>
+                  <div className="p-6 sm:p-8 text-center text-muted-foreground">
+                    <Bell className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
+                    <p className="text-xs sm:text-sm">No notifications yet</p>
+                    <p className="text-xs text-muted-foreground mt-2 px-4">
+                      You'll see notifications here when there's activity in your community.
+                    </p>
                   </div>
                 ) : (
                   <div className="divide-y divide-border">
@@ -137,26 +141,26 @@ export default function NotificationDropdown() {
                         key={notification.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className={`p-4 cursor-pointer transition-colors ${
+                        className={`p-3 sm:p-4 cursor-pointer transition-colors ${
                           notification.isRead 
                             ? 'hover:bg-accent/50' 
                             : 'bg-accent/30 hover:bg-accent/50'
                         }`}
                         onClick={() => handleNotificationClick(notification)}
                       >
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0 mt-1">
+                        <div className="flex items-start space-x-2 sm:space-x-3">
+                          <div className="flex-shrink-0 mt-0.5 sm:mt-1">
                             {getNotificationIcon(notification.type)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between mb-1">
-                              <p className={`text-sm font-medium ${
+                            <div className="flex items-start justify-between mb-1 gap-2">
+                              <p className={`text-xs sm:text-sm font-medium line-clamp-2 ${
                                 notification.isRead ? 'text-muted-foreground' : 'text-card-foreground'
                               }`}>
                                 {notification.title}
                               </p>
                               {!notification.isRead && (
-                                <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-2 mt-1" />
+                                <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1" />
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground mb-1 line-clamp-2">
@@ -175,7 +179,7 @@ export default function NotificationDropdown() {
 
               {/* Footer */}
               {notifications.length > 0 && (
-                <div className="p-3 border-t border-border bg-muted/30">
+                <div className="p-2 sm:p-3 border-t border-border bg-muted/30">
                   <Button
                     variant="ghost"
                     size="sm"

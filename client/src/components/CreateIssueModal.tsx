@@ -68,9 +68,9 @@ export default function CreateIssueModal({ isOpen, onClose }: CreateIssueModalPr
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { onClose(); } }}>
-      <DialogContent className="sm:max-w-lg bg-card border-border">
+      <DialogContent className="w-[95vw] sm:max-w-lg bg-card border-border p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-card-foreground">Add Issue</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl text-card-foreground">Add Issue</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -102,9 +102,9 @@ export default function CreateIssueModal({ isOpen, onClose }: CreateIssueModalPr
             <Label className="text-card-foreground">Upload Images (optional)</Label>
             <Input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFilesChange} />
           </div>
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={() => { resetForm(); onClose(); }} disabled={isSubmitting}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Create Issue'}</Button>
+          <div className="flex flex-col sm:flex-row gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={() => { resetForm(); onClose(); }} disabled={isSubmitting} className="w-full sm:w-auto">Cancel</Button>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">{isSubmitting ? 'Creating...' : 'Create Issue'}</Button>
           </div>
         </form>
       </DialogContent>

@@ -897,11 +897,11 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
               key="processing"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="p-8 text-center"
+              className="p-6 sm:p-8 text-center"
             >
-              <div className="w-20 h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
-              <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-3">Processing Payment</h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">Please wait while we securely process your donation...</p>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4 sm:mb-6" />
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2 sm:mb-3">Processing Payment</h3>
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mb-3 sm:mb-4">Please wait while we securely process your donation...</p>
               <div className="flex items-center justify-center space-x-2 text-sm text-slate-500 dark:text-slate-400">
                 <Shield className="w-4 h-4" />
                 <span>Your payment is encrypted and secure</span>
@@ -914,18 +914,18 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
               key="success"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="p-8 text-center"
+              className="p-6 sm:p-8 text-center"
             >
               <motion.div 
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="w-20 h-20 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
+                className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg"
               >
-                <Check className="w-10 h-10 text-white" />
+                <Check className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </motion.div>
-              <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-3">Receipt Uploaded Successfully!</h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+              <h3 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2 sm:mb-3">Receipt Uploaded Successfully!</h3>
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mb-4 sm:mb-6 leading-relaxed">
                 Your receipt has been submitted for verification. Your community leader will review it and verify your donation. You will be notified once it's verified.
               </p>
               {summary && (

@@ -22,6 +22,7 @@ export interface AuthUser {
   communityId?: string;
   profileImage?: string;
   firebaseUid?: string; // Firebase Auth UID for reference
+  emailVerified?: boolean; // Email verification status
   createdAt?: Date;
   issuesPosted?: string[];
   campaignsPosted?: string[];

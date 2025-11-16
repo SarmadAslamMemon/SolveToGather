@@ -6,8 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { usePostLikes } from '@/hooks/useComments';
-import { Heart, MessageCircle, Share2, Clock } from 'lucide-react';
+import { deleteIssue } from '@/services/firebase';
+import { Heart, MessageCircle, Share2, Clock, Trash2 } from 'lucide-react';
 import ShareModal from './ShareModal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface IssueCardProps {
   issue: {
@@ -21,19 +32,27 @@ interface IssueCardProps {
     createdAt: any;
     authorName?: string;
     authorImage?: string;
+    communityId?: string;
   };
   onLike?: (issueId: string) => void;
   onComment?: (issueId: string) => void;
   onShare?: (issueId: string) => void;
   onOpen?: (issue: any) => void;
+  onDelete?: (issueId: string) => void;
+  showDelete?: boolean;
 }
 
-export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }: IssueCardProps) {
+export default function IssueCard({ issue, onLike, onComment, onShare, onOpen, onDelete, showDelete = false }: IssueCardProps) {
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [likesCount, setLikesCount] = useState(issue.likesCount || 0);
   const [imageIndex, setImageIndex] = useState(0);
+
+  const isAdmin = currentUser?.role === 'community_leader' || currentUser?.role === 'super_user';
+  const canDelete = showDelete && isAdmin && currentUser?.communityId === issue.communityId;
 
   // Use the proper hook for like functionality
   const { isLiked, loading: isLiking, toggleLike } = usePostLikes(issue.id);
@@ -77,6 +96,42 @@ export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }:
     onShare?.(issue.id);
   };
 
+  const handleDelete = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!currentUser || !currentUser.communityId) {
+      toast({
+        title: "Error",
+        description: "Unable to delete issue. Missing user or community information.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteIssue(issue.id, currentUser.id, currentUser.communityId);
+      toast({
+        title: "Success",
+        description: "Issue deleted successfully.",
+      });
+      onDelete?.(issue.id);
+      setIsDeleteDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error deleting issue:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete issue. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const formatTimeAgo = (timestamp: any) => {
     if (!timestamp) return 'Unknown';
     
@@ -109,7 +164,7 @@ export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }:
             <img
               src={(issue.images && (issue.images as any[])[imageIndex]) || issue.image}
               alt={issue.title}
-              className="w-full h-40 object-cover"
+              className="w-full h-48 sm:h-56 object-cover"
               data-testid={`img-issue-${issue.id}`}
             />
             
@@ -148,21 +203,21 @@ export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }:
           </div>
         )}
 
-        <CardContent className="p-4">
+        <CardContent className="p-4 sm:p-5">
           {/* Title */}
-          <h3 className="font-semibold text-card-foreground mb-2 text-lg line-clamp-2" data-testid={`text-title-${issue.id}`}>
+          <h3 className="font-semibold text-card-foreground mb-2 text-lg sm:text-xl line-clamp-2" data-testid={`text-title-${issue.id}`}>
             {issue.title}
           </h3>
 
           {/* Author info */}
-          <div className="flex items-center space-x-2 mb-3">
-            <Avatar className="w-6 h-6">
+          <div className="flex items-center space-x-2 sm:space-x-3 mb-3">
+            <Avatar className="w-7 h-7 sm:w-8 sm:h-8">
               <AvatarImage src={issue.authorImage} />
-              <AvatarFallback className="text-xs bg-gradient-to-r from-blue-500 to-orange-500 text-white">
+              <AvatarFallback className="text-xs sm:text-sm bg-gradient-to-r from-blue-500 to-orange-500 text-white">
                 {issue.authorName?.charAt(0) || 'U'}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm text-muted-foreground" data-testid={`text-author-${issue.id}`}>
+            <span className="text-sm sm:text-base text-muted-foreground" data-testid={`text-author-${issue.id}`}>
               {issue.authorName || 'Anonymous'}
             </span>
             {!((issue.images && (issue.images as any[]).length > 0) || issue.image) && (
@@ -174,49 +229,66 @@ export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }:
           </div>
           
           {/* Description */}
-          <p className="text-muted-foreground text-sm mb-4 line-clamp-2" data-testid={`text-description-${issue.id}`}>
+          <p className="text-muted-foreground text-sm sm:text-base mb-4 line-clamp-3" data-testid={`text-description-${issue.id}`}>
             {issue.description}
           </p>
 
           {/* Action buttons */}
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLike}
-              disabled={isLiking}
-              className={`flex items-center space-x-2 transition-colors ${
-                isLiked 
-                  ? 'text-red-500 hover:text-red-600' 
-                  : 'text-muted-foreground hover:text-red-500'
-              }`}
-              data-testid={`button-like-${issue.id}`}
-            >
-              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-              <span data-testid={`text-likes-${issue.id}`}>{likesCount}</span>
-            </Button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLike}
+                disabled={isLiking}
+                className={`flex items-center space-x-2 transition-colors ${
+                  isLiked 
+                    ? 'text-red-500 hover:text-red-600' 
+                    : 'text-muted-foreground hover:text-red-500'
+                }`}
+                data-testid={`button-like-${issue.id}`}
+              >
+                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isLiked ? 'fill-current' : ''}`} />
+                <span data-testid={`text-likes-${issue.id}`}>{likesCount}</span>
+              </Button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleComment}
-              className="flex items-center space-x-2 text-muted-foreground hover:text-blue-500 transition-colors"
-              data-testid={`button-comment-${issue.id}`}
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span data-testid={`text-comments-${issue.id}`}>{issue.commentsCount || 0}</span>
-            </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleComment}
+                className="flex items-center space-x-2 text-muted-foreground hover:text-blue-500 transition-colors"
+                data-testid={`button-comment-${issue.id}`}
+              >
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span data-testid={`text-comments-${issue.id}`}>{issue.commentsCount || 0}</span>
+              </Button>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleShare}
-              className="flex items-center space-x-2 text-muted-foreground hover:text-orange-500 transition-colors"
-              data-testid={`button-share-${issue.id}`}
-            >
-              <Share2 className="w-4 h-4" />
-              <span>Share</span>
-            </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleShare}
+                className="flex items-center space-x-2 text-muted-foreground hover:text-orange-500 transition-colors"
+                data-testid={`button-share-${issue.id}`}
+              >
+                <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Share</span>
+              </Button>
+            </div>
+            {canDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsDeleteDialogOpen(true);
+                }}
+                className="flex items-center space-x-2 text-red-500 hover:text-red-600 transition-colors"
+                data-testid={`button-delete-${issue.id}`}
+              >
+                <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">Delete</span>
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -234,6 +306,30 @@ export default function IssueCard({ issue, onLike, onComment, onShare, onOpen }:
           communityName: issue.communityName,
         }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="w-[95vw] sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-lg sm:text-xl">Delete Issue</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm sm:text-base">
+              Are you sure you want to delete this issue? This action cannot be undone. All comments, likes, and related data will also be deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel className="w-full sm:w-auto" disabled={isDeleting}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

@@ -377,11 +377,11 @@ export default function PaymentMethods() {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="p-4 sm:p-6">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gradient mb-2">Payment Methods</h1>
-            <p className="text-muted-foreground">Loading payment methods...</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gradient mb-2">Payment Methods</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Loading payment methods...</p>
           </div>
         </div>
         <LoadingSkeleton type="dashboard" />
@@ -406,33 +406,34 @@ export default function PaymentMethods() {
   }
   
   return (
-    <div className="ml-64 p-6">
+    <div className="p-4 sm:p-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gradient mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gradient mb-2">
               Payment Methods
             </h1>
-            <p className="text-muted-foreground">Manage JazzCash and EasyPaisa payment methods for your community</p>
+            <p className="text-sm sm:text-base text-muted-foreground">Manage JazzCash and EasyPaisa payment methods for your community</p>
           </div>
           <Button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
+            className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white w-full sm:w-auto text-sm sm:text-base"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Payment Method
+            <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Add Payment Method</span>
+            <span className="sm:hidden">Add Method</span>
           </Button>
         </div>
       </motion.div>
 
       {/* Payment Methods Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {paymentMethods.map((method, index) => (
           <motion.div
             key={method.id}
@@ -441,17 +442,19 @@ export default function PaymentMethods() {
             transition={{ duration: 0.3, delay: index * 0.1 }}
           >
             <Card className="bg-card border-border hover:shadow-lg transition-shadow duration-300">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {getPaymentMethodIcon(method.type)}
-                    <div>
-                      <CardTitle className="text-lg">{getPaymentMethodName(method.type)}</CardTitle>
-                      <p className="text-sm text-muted-foreground">{method.accountNumber}</p>
+              <CardHeader className="pb-2 sm:pb-3 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                    <div className="flex-shrink-0">
+                      {getPaymentMethodIcon(method.type)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-base sm:text-lg truncate">{getPaymentMethodName(method.type)}</CardTitle>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">{method.accountNumber}</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge variant={method.isActive ? "default" : "secondary"}>
+                  <div className="flex items-center space-x-2 w-full sm:w-auto justify-between sm:justify-end">
+                    <Badge variant={method.isActive ? "default" : "secondary"} className="text-xs">
                       {method.isActive ? "Active" : "Inactive"}
                     </Badge>
                     <div className="flex space-x-1">
@@ -459,46 +462,46 @@ export default function PaymentMethods() {
                         variant="ghost"
                         size="sm"
                         onClick={() => openEditModal(method)}
-                        className="h-8 w-8 p-0"
+                        className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeletePaymentMethod(method.id)}
-                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                        className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-700"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                       </Button>
                     </div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="space-y-2 sm:space-y-3">
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Account Holder</Label>
-                    <p className="text-sm">{method.userName}</p>
+                    <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Account Holder</Label>
+                    <p className="text-xs sm:text-sm truncate">{method.userName}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">NIC Number</Label>
-                    <p className="text-sm">{method.userNic}</p>
+                    <Label className="text-xs sm:text-sm font-medium text-muted-foreground">NIC Number</Label>
+                    <p className="text-xs sm:text-sm truncate">{method.userNic}</p>
                   </div>
                   {method.qrImageUrl && (
                     <div>
-                      <Label className="text-sm font-medium text-muted-foreground">QR Code</Label>
+                      <Label className="text-xs sm:text-sm font-medium text-muted-foreground">QR Code</Label>
                       <div className="mt-2">
                         <img
                           src={method.qrImageUrl}
                           alt="QR Code"
-                          className="w-24 h-24 object-cover rounded-lg border border-border"
+                          className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border border-border"
                         />
                       </div>
                     </div>
                   )}
                   <div className="flex items-center justify-between pt-2">
-                    <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                    <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Status</Label>
                     <Switch
                       checked={method.isActive}
                       onCheckedChange={() => handleToggleActive(method)}
@@ -536,10 +539,10 @@ export default function PaymentMethods() {
 
       {/* Add Payment Method Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-card text-card-foreground">
+        <DialogContent className="w-[95vw] sm:max-w-[500px] bg-card text-card-foreground p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Add Payment Method</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-2xl font-bold">Add Payment Method</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
               Add a new JazzCash or EasyPaisa payment method for your community.
             </DialogDescription>
           </DialogHeader>
@@ -638,20 +641,21 @@ export default function PaymentMethods() {
               />
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4">
               <Button
                 variant="outline"
                 onClick={() => {
                   setIsAddModalOpen(false);
                   resetForm();
                 }}
+                className="w-full sm:w-auto text-sm sm:text-base"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleAddPaymentMethod}
                 disabled={!formData.accountNumber || !formData.userName || !formData.userNic}
-                className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white text-sm sm:text-base"
               >
                 Add Payment Method
               </Button>
@@ -662,10 +666,10 @@ export default function PaymentMethods() {
 
       {/* Edit Payment Method Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-card text-card-foreground">
+        <DialogContent className="w-[95vw] sm:max-w-[500px] bg-card text-card-foreground p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Edit Payment Method</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-2xl font-bold">Edit Payment Method</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
               Update the payment method details.
             </DialogDescription>
           </DialogHeader>
@@ -764,7 +768,7 @@ export default function PaymentMethods() {
               />
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -772,13 +776,14 @@ export default function PaymentMethods() {
                   setEditingMethod(null);
                   resetForm();
                 }}
+                className="w-full sm:w-auto text-sm sm:text-base"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleEditPaymentMethod}
                 disabled={!formData.accountNumber || !formData.userName || !formData.userNic}
-                className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white text-sm sm:text-base"
               >
                 Update Payment Method
               </Button>

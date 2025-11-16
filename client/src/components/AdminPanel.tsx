@@ -416,10 +416,10 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <h1 className="text-3xl font-bold text-foreground mb-2">Statistics</h1>
-        <p className="text-muted-foreground">Overview of your community activity.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Statistics</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Overview of your community activity.</p>
       </motion.header>
 
       {(issuesLoading || campaignsLoading || statsLoading) && (
@@ -431,82 +431,82 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8"
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8"
         >
         <Card className="bg-card border-border" data-testid="card-admin-stats-users">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-chart-1/20 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-chart-1" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-chart-1/20 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-chart-1" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground" data-testid="text-total-users">
+              <span className="text-xl sm:text-2xl font-bold text-card-foreground" data-testid="text-total-users">
                 {adminStats.totalUsers.toLocaleString()}
               </span>
             </div>
-            <h3 className="font-medium text-card-foreground">Total Users</h3>
+            <h3 className="text-xs sm:text-sm font-medium text-card-foreground">Total Users</h3>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border" data-testid="card-admin-stats-campaigns">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-chart-2/20 rounded-lg flex items-center justify-center">
-                <Megaphone className="w-6 h-6 text-chart-2" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-chart-2/20 rounded-lg flex items-center justify-center">
+                <Megaphone className="w-5 h-5 sm:w-6 sm:h-6 text-chart-2" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground" data-testid="text-active-campaigns">
+              <span className="text-xl sm:text-2xl font-bold text-card-foreground" data-testid="text-active-campaigns">
                 {adminStats.activeCampaigns}
               </span>
             </div>
-            <h3 className="font-medium text-card-foreground">Active Campaigns</h3>
+            <h3 className="text-xs sm:text-sm font-medium text-card-foreground">Active Campaigns</h3>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border" data-testid="card-admin-stats-donations">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-chart-3/20 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-chart-3" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-chart-3/20 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-chart-3" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground" data-testid="text-total-donations">
+              <span className="text-lg sm:text-xl md:text-2xl font-bold text-card-foreground" data-testid="text-total-donations">
                 ₨{(adminStats.totalDonations / 1000000).toFixed(1)}M
               </span>
             </div>
-            <h3 className="font-medium text-card-foreground">Total Donations</h3>
+            <h3 className="text-xs sm:text-sm font-medium text-card-foreground">Total Donations</h3>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border" data-testid="card-admin-stats-issues">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-chart-4/20 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-chart-4" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-chart-4/20 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-chart-4" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground" data-testid="text-pending-issues">
+              <span className="text-xl sm:text-2xl font-bold text-card-foreground" data-testid="text-pending-issues">
                 {adminStats.pendingIssues}
               </span>
             </div>
-            <h3 className="font-medium text-card-foreground">Pending Issues</h3>
+            <h3 className="text-xs sm:text-sm font-medium text-card-foreground">Pending Issues</h3>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border" data-testid="card-admin-stats-transactions">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-orange-500" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground" data-testid="text-pending-transactions">
+              <span className="text-xl sm:text-2xl font-bold text-card-foreground" data-testid="text-pending-transactions">
                 {adminStats.pendingTransactions}
               </span>
             </div>
-            <h3 className="font-medium text-card-foreground">Pending Transactions</h3>
+            <h3 className="text-xs sm:text-sm font-medium text-card-foreground">Pending Transactions</h3>
           </CardContent>
         </Card>
         </motion.div>
       )}
 
       {/* Content Grid merged from Dashboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         {/* Trending Issues */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -514,11 +514,11 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="lg:col-span-2"
         >
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-gradient">Trending Issues</h2>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gradient">Trending Issues</h2>
             <Button 
               variant="ghost" 
-              className="text-primary hover:underline" 
+              className="text-primary hover:underline text-sm sm:text-base" 
               data-testid="button-view-all-issues"
               onClick={() => window.dispatchEvent(new CustomEvent('navigate-view', { detail: { view: 'admin-issues' } }))}
             >
@@ -526,13 +526,13 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
             </Button>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {(!issues || issues.length === 0) ? (
               <Card className="bg-card border-border">
-                <CardContent className="p-8 text-center">
-                  <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-card-foreground mb-2">No Issues Yet</h3>
-                  <p className="text-muted-foreground">
+                <CardContent className="p-4 sm:p-6 sm:p-8 text-center">
+                  <AlertTriangle className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
+                  <h3 className="text-base sm:text-lg font-medium text-card-foreground mb-2">No Issues Yet</h3>
+                  <p className="text-sm sm:text-base text-muted-foreground">
                     There are no issues reported in your community yet. Be the first to report a community issue.
                   </p>
                 </CardContent>
@@ -544,15 +544,15 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
                   className="bg-card border-border hover:shadow-md transition-shadow duration-200 cursor-pointer"
                   onClick={() => handleOpenPost(issue)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                        <AlertTriangle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-start space-x-2 sm:space-x-3">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                        <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-card-foreground text-sm truncate">{issue.title}</h3>
+                        <h3 className="font-medium text-card-foreground text-xs sm:text-sm truncate">{issue.title}</h3>
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{issue.description}</p>
-                        <div className="flex items-center justify-between mt-2">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-0 mt-2">
                           <span className="text-xs text-muted-foreground">
                             {issue.likesCount || 0} likes • {issue.commentsCount || 0} comments
                           </span>
@@ -578,12 +578,12 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
         >
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gradient">Active Campaigns</h2>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gradient">Active Campaigns</h2>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-primary hover:underline" 
+              className="text-primary hover:underline text-xs sm:text-sm" 
               data-testid="button-view-all-campaigns"
               onClick={() => window.dispatchEvent(new CustomEvent('navigate-view', { detail: { view: 'admin-campaigns' } }))}
             >
@@ -591,13 +591,13 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
             </Button>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {(!campaigns || campaigns.length === 0) ? (
               <Card className="bg-card border-border">
-                <CardContent className="p-6 text-center">
-                  <DollarSign className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                  <h3 className="font-medium text-card-foreground mb-2">No Active Campaigns</h3>
-                  <p className="text-sm text-muted-foreground">
+                <CardContent className="p-4 sm:p-6 text-center">
+                  <DollarSign className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground mx-auto mb-2 sm:mb-3" />
+                  <h3 className="text-sm sm:text-base font-medium text-card-foreground mb-2">No Active Campaigns</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     There are no fundraising campaigns at the moment.
                   </p>
                 </CardContent>
@@ -609,15 +609,15 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
                   className="bg-card border-border hover:shadow-md transition-shadow duration-200 cursor-pointer"
                   onClick={() => handleDonate(campaign.id)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                        <DollarSign className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-start space-x-2 sm:space-x-3">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                        <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-600 dark:text-orange-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-card-foreground text-sm truncate">{campaign.title}</h3>
+                        <h3 className="font-medium text-card-foreground text-xs sm:text-sm truncate">{campaign.title}</h3>
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{campaign.description}</p>
-                        <div className="flex items-center justify-between mt-2">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-0 mt-2">
                           <span className="text-xs text-muted-foreground">
                             ₨{(campaign.raised || 0).toLocaleString()} raised
                           </span>
@@ -629,9 +629,9 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
                           </span>
                         </div>
                         <div className="mt-2">
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1 sm:h-1.5">
                             <div 
-                              className="bg-orange-500 h-1.5 rounded-full transition-all duration-300" 
+                              className="bg-orange-500 h-1 sm:h-1.5 rounded-full transition-all duration-300" 
                               style={{ 
                                 width: `${Math.min(((campaign.raised || 0) / (campaign.goal || 1)) * 100, 100)}%` 
                               }}
@@ -663,10 +663,10 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <h1 className="text-3xl font-bold text-foreground mb-2">Add Issue</h1>
-        <p className="text-muted-foreground">Report a new community issue.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Add Issue</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Report a new community issue.</p>
       </motion.header>
 
       <motion.div
@@ -675,10 +675,10 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
         transition={{ duration: 0.6, delay: 0.2 }}
       >
         <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground">Create New Issue</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg text-card-foreground">Create New Issue</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleCreateIssue} className="space-y-4">
               <div>
                 <Label htmlFor="issue-title" className="text-card-foreground">Issue Title</Label>
@@ -769,10 +769,10 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <h1 className="text-3xl font-bold text-foreground mb-2">Raise Campaign</h1>
-        <p className="text-muted-foreground">Launch a fundraising campaign.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Raise Campaign</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Launch a fundraising campaign.</p>
       </motion.header>
 
       <motion.div
@@ -781,13 +781,13 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
         transition={{ duration: 0.6, delay: 0.2 }}
       >
         <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground">Create New Campaign</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg text-card-foreground">Create New Campaign</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleCreateCampaign} className="space-y-4">
               <div>
-                <Label htmlFor="campaign-title" className="text-card-foreground">Campaign Title</Label>
+                <Label htmlFor="campaign-title" className="text-sm sm:text-base text-card-foreground">Campaign Title</Label>
                 <Input
                   id="campaign-title"
                   type="text"
@@ -795,26 +795,26 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
                   value={newCampaign.title}
                   onChange={(e) => setNewCampaign(prev => ({ ...prev, title: e.target.value }))}
                   required
-                  className="bg-input border-border text-card-foreground"
+                  className="bg-input border-border text-card-foreground text-sm sm:text-base"
                   data-testid="input-campaign-title"
                 />
               </div>
 
               <div>
-                <Label htmlFor="campaign-description" className="text-card-foreground">Description</Label>
+                <Label htmlFor="campaign-description" className="text-sm sm:text-base text-card-foreground">Description</Label>
                 <Textarea
                   id="campaign-description"
                   placeholder="Describe the fundraising goals..."
                   value={newCampaign.description}
                   onChange={(e) => setNewCampaign(prev => ({ ...prev, description: e.target.value }))}
                   required
-                  className="bg-input border-border text-card-foreground resize-none"
+                  className="bg-input border-border text-card-foreground resize-none text-sm sm:text-base"
                   rows={3}
                   data-testid="textarea-campaign-description"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="campaign-goal" className="text-card-foreground">Goal Amount (₨)</Label>
                   <Input
@@ -941,7 +941,7 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
   console.log('[AdminPanel] Will render view:', currentView);
   
   return (
-    <div className="ml-64 p-6">
+    <div className="md:ml-64 p-4 sm:p-6">
       <div style={{ display: 'none' }} data-testid="admin-current-view">{currentView}</div>
       {currentView === 'admin-dashboard' && renderStatistics()}
       <AnimatePresence mode="wait" onExitComplete={() => {
@@ -981,59 +981,59 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
 
       {/* Post Modal */}
       <Dialog open={!!openPost} onOpenChange={handleClosePost}>
-        <DialogContent className="sm:max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-hidden p-0">
+        <DialogContent className="w-[95vw] sm:max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-hidden p-0">
           {openPost && (
             <div className="flex flex-col h-[90vh]">
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
                 <div 
-                  className="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-2 -m-2 transition-colors"
+                  className="flex items-center space-x-2 sm:space-x-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-2 -m-2 transition-colors flex-1 min-w-0"
                   onClick={() => handleAuthorClick(openPost.authorId)}
                 >
-                  <Avatar className="w-10 h-10">
+                  <Avatar className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">
                     <AvatarImage src={openPost.authorImage || openPost.image} />
-                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-orange-500 text-white">
+                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-orange-500 text-white text-xs sm:text-sm">
                       {openPost.authorName?.charAt(0) || openPost.title?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <h3 className="font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate">
                       {openPost.authorName || openPost.title || 'Community Leader'}
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                       {formatTimeAgo(openPost.createdAt)}
                     </p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleClosePost}>
-                  <X className="w-5 h-5" />
+                <Button variant="ghost" size="sm" onClick={handleClosePost} className="flex-shrink-0">
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </div>
 
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto min-h-0">
                 {/* Post Content */}
-                <div className="p-6">
-                  <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-4">
+                <div className="p-4 sm:p-6">
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-200 mb-3 sm:mb-4">
                     {openPost.title}
                   </h2>
 
-                  <p className="text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
+                  <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 mb-4 sm:mb-6 leading-relaxed">
                     {openPost.description}
                   </p>
 
                   {/* Campaign-specific content */}
                   {openPost.goal && (
-                    <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-orange-50 dark:from-blue-900/20 dark:to-orange-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Fundraising Progress</span>
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-orange-50 dark:from-blue-900/20 dark:to-orange-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-2">
+                        <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">Fundraising Progress</span>
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
                           {formatCurrency(openPost.raised || 0)} / {formatCurrency(openPost.goal)}
                         </span>
                       </div>
                       <Progress
                         value={Math.min(((openPost.raised || 0) / openPost.goal) * 100, 100)}
-                        className="h-3 mb-2"
+                        className="h-2 sm:h-3 mb-2"
                       />
                       <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                         <span>{Math.round(((openPost.raised || 0) / openPost.goal) * 100)}% funded</span>
@@ -1080,39 +1080,39 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
                 </div>
 
                 {/* Comments Section */}
-                <div className="border-t border-slate-200 dark:border-slate-700 p-6">
-                  <div className="flex items-center space-x-6 mb-6">
+                <div className="border-t border-slate-200 dark:border-slate-700 p-4 sm:p-6">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-6 mb-4 sm:mb-6">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={togglePostLike}
                       disabled={postLikeLoading}
-                      className={`flex items-center space-x-2 transition-colors ${
+                      className={`flex items-center space-x-1 sm:space-x-2 transition-colors text-xs sm:text-sm ${
                         isPostLiked
                           ? 'text-red-500 hover:text-red-600'
                           : 'text-slate-500 hover:text-red-500'
                       }`}
                     >
-                      <Heart className={`w-5 h-5 ${isPostLiked ? 'fill-current' : ''}`} />
+                      <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isPostLiked ? 'fill-current' : ''}`} />
                       <span>{openPost.likesCount || 0}</span>
                     </Button>
 
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex items-center space-x-2 text-slate-500 hover:text-blue-500 transition-colors"
+                      className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-slate-500 hover:text-blue-500 transition-colors"
                     >
-                      <MessageCircle className="w-5 h-5" />
+                      <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span>{openPost.commentsCount || 0}</span>
                     </Button>
 
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="flex items-center space-x-2 text-slate-500 hover:text-orange-500 transition-colors"
+                      className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-slate-500 hover:text-orange-500 transition-colors"
                     >
-                      <Share2 className="w-5 h-5" />
-                      <span>Share</span>
+                      <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="hidden sm:inline">Share</span>
                     </Button>
 
                     {/* Donate Button for Campaigns - Only show if goal not reached */}
@@ -1122,16 +1122,17 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
                           handleClosePost();
                           handleDonate(openPost.id);
                         }}
-                        className="ml-auto bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
+                        className="ml-auto bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white text-xs sm:text-sm"
                       >
-                        <Heart className="w-4 h-4 mr-2" />
-                        Donate Now
+                        <Heart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        <span className="hidden sm:inline">Donate Now</span>
+                        <span className="sm:hidden">Donate</span>
                       </Button>
                     )}
                     {/* Goal Achieved Message for Campaigns */}
                     {openPost.goal && Number(openPost.raised || 0) >= Number(openPost.goal || 0) && (
-                      <div className="ml-auto bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-2 text-center">
-                        <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                      <div className="ml-auto bg-green-500/10 border border-green-500/20 rounded-lg px-3 sm:px-4 py-2 text-center">
+                        <p className="text-xs sm:text-sm font-medium text-green-600 dark:text-green-400">
                           ✓ Goal Achieved!
                         </p>
                       </div>
@@ -1139,31 +1140,31 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
                   </div>
 
                   {/* Comments */}
-                  <div className="space-y-4 mb-6">
+                  <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                     {commentsLoading ? (
-                      <div className="text-center text-slate-500">Loading comments...</div>
+                      <div className="text-center text-xs sm:text-sm text-slate-500">Loading comments...</div>
                     ) : comments.length === 0 ? (
-                      <div className="text-center text-slate-500">No comments yet. Be the first to comment!</div>
+                      <div className="text-center text-xs sm:text-sm text-slate-500">No comments yet. Be the first to comment!</div>
                     ) : (
                       comments.map((comment: any) => (
-                        <div key={comment.id} className="flex space-x-3">
-                          <Avatar className="w-8 h-8">
+                        <div key={comment.id} className="flex space-x-2 sm:space-x-3">
+                          <Avatar className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0">
                             <AvatarImage src={comment.authorImage} />
                             <AvatarFallback className="text-xs bg-gradient-to-r from-blue-500 to-orange-500 text-white">
                               {comment.authorName?.charAt(0) || 'A'}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex-1">
-                            <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-4 py-3">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <span className="font-semibold text-sm text-slate-800 dark:text-slate-200">
+                          <div className="flex-1 min-w-0">
+                            <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl px-3 sm:px-4 py-2 sm:py-3">
+                              <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-1">
+                                <span className="font-semibold text-xs sm:text-sm text-slate-800 dark:text-slate-200">
                                   {comment.authorName || 'Anonymous'}
                                 </span>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
                                   {formatTimeAgo(comment.createdAt)}
                                 </span>
                               </div>
-                              <p className="text-sm text-slate-700 dark:text-slate-300">
+                              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 break-words">
                                 {comment.text}
                               </p>
                             </div>
@@ -1174,8 +1175,8 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
                   </div>
 
                   {/* Add Comment */}
-                  <div className="flex space-x-3">
-                    <Avatar className="w-8 h-8">
+                  <div className="flex space-x-2 sm:space-x-3">
+                    <Avatar className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0">
                       <AvatarImage src={currentUser?.profileImage} />
                       <AvatarFallback className="text-xs bg-gradient-to-r from-blue-500 to-orange-500 text-white">
                         {currentUser?.firstName?.charAt(0) || 'U'}
@@ -1188,15 +1189,15 @@ export default function AdminPanel({ currentView }: AdminPanelProps) {
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
-                        className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-3 sm:px-4 py-2 text-xs sm:text-sm border border-slate-200 dark:border-slate-700 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                       <Button
                         size="sm"
                         onClick={handleAddComment}
                         disabled={!newComment.trim() || addingComment}
-                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                        className="bg-blue-500 hover:bg-blue-600 text-white flex-shrink-0"
                       >
-                        <Send className="w-4 h-4" />
+                        <Send className="w-3 h-3 sm:w-4 sm:h-4" />
                       </Button>
                     </div>
                   </div>

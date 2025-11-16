@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertCommunitySchema } from "@shared/schema";
+import { sendVerificationEmail } from "./email";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -173,6 +174,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error removing leader:', error);
       res.status(500).json({ error: 'Failed to remove leader' });
+    }
+  });
+
+  // Auth Routes
+  app.post('/api/auth/send-verification-email', async (req, res) => {
+    try {
+      console.log('[Server] 📧 Received email verification request');
+      const { email, code } = req.body;
+      console.log('[Server] Email:', email, 'Code:', code);
+
+      if (!email || !code) {
+        console.error('[Server] Missing email or code');
+        return res.status(400).json({ error: 'Email and code are required' });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        console.error('[Server] Invalid email format:', email);
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+
+      // Try to send email via nodemailer
+      const emailSent = await sendVerificationEmail(email, code);
+      
+      if (emailSent) {
+        console.log(`[Server] ✅ Email sent successfully to ${email}`);
+      } else {
+        // If email sending failed, log the code for development
+        console.log(`[Server] 📧 ==========================================`);
+        console.log(`[Server] 📧 VERIFICATION CODE FOR ${email}`);
+        console.log(`[Server] 📧 CODE: ${code}`);
+        console.log(`[Server] 📧 This code expires in 15 minutes`);
+        console.log(`[Server] 📧 ==========================================`);
+        console.log(`[Server] ⚠️ Email not sent - check SMTP configuration`);
+      }
+
+      res.json({ 
+        message: emailSent 
+          ? 'Verification email sent successfully' 
+          : 'Verification code generated (email not configured)',
+        // In development or if email failed, include code for testing
+        ...((process.env.NODE_ENV === 'development' || !emailSent) && { code })
+      });
+      console.log('[Server] ✅ Response sent successfully');
+    } catch (error) {
+      console.error('[Server] ❌ Error sending verification email:', error);
+      res.status(500).json({ error: 'Failed to send verification email' });
     }
   });
 

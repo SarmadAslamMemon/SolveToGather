@@ -89,10 +89,10 @@ export default function CreateCommunityModal({ onCommunityCreated }: CreateCommu
           <span>Create Community</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[95vw] sm:max-w-[500px] p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <MapPin className="w-5 h-5" />
+          <DialogTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+            <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Create New Community</span>
           </DialogTitle>
         </DialogHeader>
@@ -131,16 +131,17 @@ export default function CreateCommunityModal({ onCommunityCreated }: CreateCommu
             />
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:space-x-2 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsOpen(false)}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !formData.name || !formData.location}>
+            <Button type="submit" disabled={loading || !formData.name || !formData.location} className="w-full sm:w-auto">
               {loading ? 'Creating...' : 'Create Community'}
             </Button>
           </div>

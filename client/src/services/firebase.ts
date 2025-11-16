@@ -150,8 +150,42 @@ export const getCampaigns = async (communityId?: string) => {
     const snapshot = await getDocs(q);
     const campaigns = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) }));
     
+    // Fetch author information for each campaign
+    const campaignsWithAuthors = await Promise.all(
+      campaigns.map(async (campaign) => {
+        try {
+          if (campaign.authorId) {
+            const authorDoc = await getDoc(doc(db, 'users', campaign.authorId));
+            if (authorDoc.exists()) {
+              const authorData = authorDoc.data();
+              return {
+                ...campaign,
+                authorName: `${authorData.firstName} ${authorData.lastName}`.trim(),
+                authorImage: authorData.profileImage || '',
+                authorRole: authorData.role || 'normal_user',
+              };
+            }
+          }
+          return {
+            ...campaign,
+            authorName: 'Community Leader',
+            authorImage: '',
+            authorRole: 'community_leader',
+          };
+        } catch (error) {
+          console.error('Error fetching author for campaign:', campaign.id, error);
+          return {
+            ...campaign,
+            authorName: 'Community Leader',
+            authorImage: '',
+            authorRole: 'community_leader',
+          };
+        }
+      })
+    );
+    
     // Sort in memory instead of using orderBy in query
-    return campaigns.sort((a, b) => {
+    return campaignsWithAuthors.sort((a, b) => {
       const aTime = (a as any).createdAt?.toDate?.() || new Date((a as any).createdAt);
       const bTime = (b as any).createdAt?.toDate?.() || new Date((b as any).createdAt);
       return bTime.getTime() - aTime.getTime();
@@ -179,6 +213,152 @@ export const createCampaign = async (campaignData: any) => {
     return docRef.id;
   } catch (error) {
     console.error('Error creating campaign:', error);
+    throw error;
+  }
+};
+
+// Delete Issue
+export const deleteIssue = async (issueId: string, userId: string, communityId: string) => {
+  try {
+    // Verify the user is a community leader of this community
+    const issueDoc = await getDoc(doc(db, 'issues', issueId));
+    if (!issueDoc.exists()) {
+      throw new Error('Issue not found');
+    }
+
+    const issueData = issueDoc.data();
+    
+    // Check if user is the author or a community leader of the same community
+    if (issueData.authorId !== userId && issueData.communityId !== communityId) {
+      throw new Error('Unauthorized: You can only delete issues from your community');
+    }
+
+    // Delete all likes for this issue (using targetId and targetType)
+    const likesQuery = query(
+      collection(db, 'likes'),
+      where('targetId', '==', issueId),
+      where('targetType', '==', 'post')
+    );
+    const likesSnapshot = await getDocs(likesQuery);
+    await Promise.all(
+      likesSnapshot.docs.map(async (likeDoc) => {
+        await deleteDoc(likeDoc.ref);
+      })
+    );
+
+    // Delete all comments for this issue (recursively)
+    const commentsQuery = query(
+      collection(db, 'comments'),
+      where('postId', '==', issueId)
+    );
+    const commentsSnapshot = await getDocs(commentsQuery);
+    await Promise.all(
+      commentsSnapshot.docs.map(async (commentDoc) => {
+        // Delete comment and its replies recursively
+        await deleteComment(commentDoc.id);
+      })
+    );
+
+    // Delete the issue document
+    await deleteDoc(doc(db, 'issues', issueId));
+
+    // Remove from author's issuesPosted array if exists
+    if (issueData.authorId) {
+      const authorDoc = await getDoc(doc(db, 'users', issueData.authorId));
+      if (authorDoc.exists()) {
+        const authorData = authorDoc.data();
+        const issuesPosted = (authorData.issuesPosted || []).filter((id: string) => id !== issueId);
+        await updateDoc(doc(db, 'users', issueData.authorId), {
+          issuesPosted,
+        });
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting issue:', error);
+    throw error;
+  }
+};
+
+// Delete Campaign
+export const deleteCampaign = async (campaignId: string, userId: string, communityId: string) => {
+  try {
+    // Verify the user is a community leader of this community
+    const campaignDoc = await getDoc(doc(db, 'campaigns', campaignId));
+    if (!campaignDoc.exists()) {
+      throw new Error('Campaign not found');
+    }
+
+    const campaignData = campaignDoc.data();
+    
+    // Check if user is the author or a community leader of the same community
+    if (campaignData.authorId !== userId && campaignData.communityId !== communityId) {
+      throw new Error('Unauthorized: You can only delete campaigns from your community');
+    }
+
+    // Delete all likes for this campaign (using targetId and targetType)
+    const likesQuery = query(
+      collection(db, 'likes'),
+      where('targetId', '==', campaignId),
+      where('targetType', '==', 'post')
+    );
+    const likesSnapshot = await getDocs(likesQuery);
+    await Promise.all(
+      likesSnapshot.docs.map(async (likeDoc) => {
+        await deleteDoc(likeDoc.ref);
+      })
+    );
+
+    // Delete all comments for this campaign (recursively)
+    const commentsQuery = query(
+      collection(db, 'comments'),
+      where('postId', '==', campaignId)
+    );
+    const commentsSnapshot = await getDocs(commentsQuery);
+    await Promise.all(
+      commentsSnapshot.docs.map(async (commentDoc) => {
+        // Delete comment and its replies recursively
+        await deleteComment(commentDoc.id);
+      })
+    );
+
+    // Delete all transactions for this campaign
+    const transactionsQuery = query(
+      collection(db, 'transactionHistory'),
+      where('campaignId', '==', campaignId)
+    );
+    const transactionsSnapshot = await getDocs(transactionsQuery);
+    await Promise.all(
+      transactionsSnapshot.docs.map(async (transactionDoc) => {
+        const transactionData = transactionDoc.data();
+        // Delete transaction detail if exists
+        if (transactionData.transactionDetailId) {
+          await deleteDoc(doc(db, 'transactionDetails', transactionData.transactionDetailId));
+        }
+        // Delete transaction history
+        await deleteDoc(transactionDoc.ref);
+      })
+    );
+
+    // Delete the campaign document
+    await deleteDoc(doc(db, 'campaigns', campaignId));
+
+    // Remove from author's campaignsPosted array if exists
+    if (campaignData.authorId) {
+      const authorDoc = await getDoc(doc(db, 'users', campaignData.authorId));
+      if (authorDoc.exists()) {
+        const authorData = authorDoc.data();
+        const campaignsPosted = (authorData.campaignsPosted || []).filter((id: string) => id !== campaignId);
+        await updateDoc(doc(db, 'users', campaignData.authorId), {
+          campaignsPosted,
+        });
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting campaign:', error);
     throw error;
   }
 };
@@ -887,11 +1067,45 @@ export const subscribeToCampaigns = (callback: (campaigns: any[]) => void, commu
     q = query(collection(db, 'campaigns'), where('communityId', '==', communityId), where('isActive', '==', true));
   }
 
-  return onSnapshot(q, (snapshot) => {
+  return onSnapshot(q, async (snapshot) => {
     const campaigns = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) }));
     
+    // Fetch author information for each campaign
+    const campaignsWithAuthors = await Promise.all(
+      campaigns.map(async (campaign) => {
+        try {
+          if (campaign.authorId) {
+            const authorDoc = await getDoc(doc(db, 'users', campaign.authorId));
+            if (authorDoc.exists()) {
+              const authorData = authorDoc.data();
+              return {
+                ...campaign,
+                authorName: `${authorData.firstName} ${authorData.lastName}`.trim(),
+                authorImage: authorData.profileImage || '',
+                authorRole: authorData.role || 'normal_user',
+              };
+            }
+          }
+          return {
+            ...campaign,
+            authorName: 'Community Leader',
+            authorImage: '',
+            authorRole: 'community_leader',
+          };
+        } catch (error) {
+          console.error('Error fetching author for campaign:', campaign.id, error);
+          return {
+            ...campaign,
+            authorName: 'Community Leader',
+            authorImage: '',
+            authorRole: 'community_leader',
+          };
+        }
+      })
+    );
+    
     // Sort in memory instead of using orderBy in query
-    const sortedCampaigns = campaigns.sort((a, b) => {
+    const sortedCampaigns = campaignsWithAuthors.sort((a, b) => {
       const aTime = (a as any).createdAt?.toDate?.() || new Date((a as any).createdAt);
       const bTime = (b as any).createdAt?.toDate?.() || new Date((b as any).createdAt);
       return bTime.getTime() - aTime.getTime();
@@ -1128,10 +1342,25 @@ export const deleteComment = async (commentId: string) => {
     // Delete the comment
     await deleteDoc(doc(db, 'comments', commentId));
 
-    // Update post comments count
-    await updateDoc(doc(db, 'issues', commentData.postId), {
-      commentsCount: increment(-1)
-    });
+    // Update post comments count - check if it's an issue or campaign
+    const issueRef = doc(db, 'issues', commentData.postId);
+    const campaignRef = doc(db, 'campaigns', commentData.postId);
+    
+    try {
+      // Try to update as issue first
+      await updateDoc(issueRef, {
+        commentsCount: increment(-1)
+      });
+    } catch (error) {
+      // If it fails, try as campaign
+      try {
+        await updateDoc(campaignRef, {
+          commentsCount: increment(-1)
+        });
+      } catch (campaignError) {
+        console.error('Error updating comments count for post:', commentData.postId);
+      }
+    }
 
     // Update parent comment replies count if it's a reply
     if (commentData.parentCommentId) {
