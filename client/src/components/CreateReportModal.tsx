@@ -56,9 +56,9 @@ export default function CreateReportModal({ isOpen, onClose }: CreateReportModal
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { onClose(); } }}>
-      <DialogContent className="sm:max-w-lg bg-card border-border">
+      <DialogContent className="w-[95vw] sm:max-w-lg bg-card border-border p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-card-foreground">Submit a Report</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl text-card-foreground">Submit a Report</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -98,9 +98,9 @@ export default function CreateReportModal({ isOpen, onClose }: CreateReportModal
               rows={4}
             />
           </div>
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={() => { resetForm(); onClose(); }} disabled={isSubmitting}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Submitting...' : 'Submit Report'}</Button>
+          <div className="flex flex-col sm:flex-row gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={() => { resetForm(); onClose(); }} disabled={isSubmitting} className="w-full sm:w-auto">Cancel</Button>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">{isSubmitting ? 'Submitting...' : 'Submit Report'}</Button>
           </div>
         </form>
       </DialogContent>

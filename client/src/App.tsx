@@ -8,6 +8,9 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
 
 import Login from "@/components/Login";
 import MainContent from "@/components/MainContent";
@@ -21,6 +24,8 @@ import PaymentCallback from "@/pages/PaymentCallback";
 function AppContent() {
   const { currentUser, loading, selectedRole, setSelectedRole } = useAuth();
   const [currentView, setCurrentView] = useState('feed');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Determine admin mode early and keep hooks above early returns
   const isSuperUser = currentUser?.role === 'super_user';
@@ -88,7 +93,21 @@ function AppContent() {
       <Sidebar 
         currentView={currentView} 
         onViewChange={handleViewChange}
+        isOpen={sidebarOpen}
+        onOpenChange={setSidebarOpen}
       />
+      
+      {/* Mobile menu toggle button */}
+      {isMobile && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="fixed top-4 left-4 z-40 md:hidden"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <Menu className="h-6 w-6" />
+        </Button>
+      )}
       
       <AnimatePresence mode="wait" key={currentView}>
         <motion.div
@@ -97,7 +116,9 @@ function AppContent() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          style={{ height: '100%' }}
+          className={`min-h-screen transition-all duration-300 ${
+            isMobile ? 'pt-16' : 'md:ml-64'
+          }`}
         >
           <MainContent currentView={currentView} />
         </motion.div>

@@ -66,32 +66,32 @@ export default function Notifications() {
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="md:ml-64 p-4 sm:p-6">
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-              <Bell className="w-6 h-6 text-blue-500" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+              <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gradient">Notifications</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gradient">Notifications</h1>
               {unreadCount > 0 && (
-                <p className="text-sm text-muted-foreground">{unreadCount} unread notification{unreadCount > 1 ? 's' : ''}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{unreadCount} unread notification{unreadCount > 1 ? 's' : ''}</p>
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="flex rounded-lg border border-border">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="flex rounded-lg border border-border w-full sm:w-auto">
               <Button
                 variant={filter === 'all' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setFilter('all')}
-                className="rounded-r-none"
+                className="rounded-r-none flex-1 sm:flex-none text-xs sm:text-sm"
               >
                 All ({notifications.length})
               </Button>
@@ -99,7 +99,7 @@ export default function Notifications() {
                 variant={filter === 'unread' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setFilter('unread')}
-                className="rounded-l-none border-l"
+                className="rounded-l-none border-l flex-1 sm:flex-none text-xs sm:text-sm"
               >
                 Unread ({unreadCount})
               </Button>
@@ -111,9 +111,11 @@ export default function Notifications() {
                 onClick={handleMarkAllAsRead}
                 disabled={markingRead}
                 data-testid="button-mark-all-read"
+                className="w-full sm:w-auto text-xs sm:text-sm"
               >
-                <Check className="w-4 h-4 mr-2" />
-                Mark all as read
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Mark all as read</span>
+                <span className="sm:hidden">Mark all read</span>
               </Button>
             )}
           </div>
@@ -123,12 +125,12 @@ export default function Notifications() {
       <div className="space-y-3 max-w-3xl mx-auto">
         {filteredNotifications.length === 0 ? (
           <Card className="bg-card border-border">
-            <CardContent className="p-12 text-center">
-              <Bell className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium text-card-foreground mb-2">
+            <CardContent className="p-8 sm:p-12 text-center">
+              <Bell className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground mx-auto mb-3 sm:mb-4 opacity-50" />
+              <h3 className="text-base sm:text-lg font-medium text-card-foreground mb-2">
                 {filter === 'unread' ? 'All caught up!' : 'No notifications yet'}
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-sm sm:text-base text-muted-foreground px-4">
                 {filter === 'unread' 
                   ? "You don't have any unread notifications" 
                   : "You'll see notifications here when there's activity in your community"}
@@ -149,10 +151,10 @@ export default function Notifications() {
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-start space-x-3 sm:space-x-4">
                     <div className="flex-shrink-0">
-                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center ${
                         notification.type === 'new_post' ? 'bg-blue-500/20' :
                         notification.type === 'new_campaign' ? 'bg-green-500/20' :
                         notification.type === 'comment_reply' ? 'bg-purple-500/20' :
@@ -164,20 +166,20 @@ export default function Notifications() {
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className={`font-semibold ${
+                      <div className="flex items-start justify-between mb-2 gap-2">
+                        <h3 className={`text-sm sm:text-base font-semibold ${
                           notification.isRead ? 'text-muted-foreground' : 'text-card-foreground'
                         }`}>
                           {notification.title}
                         </h3>
                         {!notification.isRead && (
-                          <Badge variant="default" className="ml-2 bg-blue-500 text-white">New</Badge>
+                          <Badge variant="default" className="ml-2 bg-blue-500 text-white text-xs flex-shrink-0">New</Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-2 line-clamp-2">
                         {notification.message}
                       </p>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                         <p className="text-xs text-muted-foreground">
                           {formatTime(notification.createdAt)}
                         </p>
@@ -189,7 +191,7 @@ export default function Notifications() {
                               e.stopPropagation();
                               markAsRead(notification.id);
                             }}
-                            className="text-xs h-7"
+                            className="text-xs h-7 w-full sm:w-auto"
                           >
                             <Check className="w-3 h-3 mr-1" />
                             Mark as read

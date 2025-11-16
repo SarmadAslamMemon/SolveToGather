@@ -18,7 +18,8 @@ import { useComments, useAddComment, useDeleteComment, usePostLikes } from '@/ho
 import { useToast } from '@/hooks/use-toast';
 import { getDoc, doc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Bell, Plus, AlertTriangle, DollarSign, Users, Heart, MessageCircle, Share2, ChevronLeft, ChevronRight, Clock, Send, X } from 'lucide-react';
+import { getCommunities } from '@/services/firebase';
+import { Bell, Plus, AlertTriangle, DollarSign, Users, Heart, MessageCircle, Share2, ChevronLeft, ChevronRight, Clock, Send, X, MapPin } from 'lucide-react';
 
 export default function Dashboard() {
   const { currentUser } = useAuth();
@@ -34,9 +35,32 @@ export default function Dashboard() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [communityMembersCount, setCommunityMembersCount] = useState(0);
   const [membersLoading, setMembersLoading] = useState(true);
+  const [communityName, setCommunityName] = useState<string | null>(null);
 
   const { issues, loading: issuesLoading } = useIssues(currentUser?.communityId, true);
   const { campaigns, loading: campaignsLoading } = useCampaigns(currentUser?.communityId, true);
+
+  // Fetch community name
+  useEffect(() => {
+    const fetchCommunityName = async () => {
+      if (!currentUser?.communityId || currentUser?.role === 'super_user') {
+        setCommunityName(null);
+        return;
+      }
+
+      try {
+        const communities = await getCommunities();
+        const community = communities.find((c: any) => c.id === currentUser.communityId);
+        if (community) {
+          setCommunityName(community.name);
+        }
+      } catch (error) {
+        console.error('Error fetching community name:', error);
+      }
+    };
+
+    fetchCommunityName();
+  }, [currentUser?.communityId, currentUser?.role]);
 
   // Hooks for post modal
   const { comments, loading: commentsLoading } = useComments(openPost?.id || '', 10);
@@ -170,27 +194,36 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="md:ml-64 p-4 sm:p-6">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gradient mb-2" data-testid="text-welcome">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gradient mb-2" data-testid="text-welcome">
               Welcome back, {currentUser?.firstName || 'User'}!
             </h1>
-            <p className="text-muted-foreground">Here's what's happening in your community today.</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm sm:text-base text-muted-foreground">Here's what's happening in your community today.</p>
+              {communityName && (
+                <span className="text-sm sm:text-base text-muted-foreground flex items-center gap-1" data-testid="text-community-name">
+                  <MapPin className="w-4 h-4" />
+                  {communityName}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
             <NotificationDropdown />
             {!isNormalUser && (
-              <Button className="btn-primary" data-testid="button-new-post">
+              <Button className="btn-primary text-sm sm:text-base" data-testid="button-new-post">
                 <Plus className="w-4 h-4 mr-2" />
-                New Post
+                <span className="hidden sm:inline">New Post</span>
+                <span className="sm:hidden">New</span>
               </Button>
             )}
           </div>
@@ -202,58 +235,58 @@ export default function Dashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className={`grid grid-cols-1 ${isNormalUser ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-6 mb-8`}
+        className={`grid grid-cols-1 ${isNormalUser ? 'sm:grid-cols-2' : 'sm:grid-cols-2 md:grid-cols-3'} gap-4 sm:gap-6 mb-6 sm:mb-8`}
       >
         <Card className="bg-card border-border card-hover" data-testid="card-stats-issues">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-chart-1/20 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-chart-1" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-chart-1/20 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-chart-1" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground" data-testid="text-active-issues">
+              <span className="text-xl sm:text-2xl font-bold text-card-foreground" data-testid="text-active-issues">
                 {stats.activeIssues}
               </span>
             </div>
-            <h3 className="font-medium text-card-foreground mb-1">Active Issues</h3>
-            <p className="text-sm text-muted-foreground">Community challenges</p>
+            <h3 className="text-sm sm:text-base font-medium text-card-foreground mb-1">Active Issues</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">Community challenges</p>
           </CardContent>
         </Card>
 
         {!isNormalUser && (
         <Card className="bg-card border-border card-hover" data-testid="card-stats-raised">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-chart-2/20 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-6 h-6 text-chart-2" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-chart-2/20 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-chart-2" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground" data-testid="text-total-raised">
+              <span className="text-xl sm:text-2xl font-bold text-card-foreground" data-testid="text-total-raised">
                 ₨{(stats.totalRaised / 1000000).toFixed(1)}M
               </span>
             </div>
-            <h3 className="font-medium text-card-foreground mb-1">Total Raised</h3>
-            <p className="text-sm text-muted-foreground">Funds collected</p>
+            <h3 className="text-sm sm:text-base font-medium text-card-foreground mb-1">Total Raised</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">Funds collected</p>
           </CardContent>
         </Card>
         )}
 
         <Card className="bg-card border-border card-hover" data-testid="card-stats-members">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-chart-3/20 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-chart-3" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-chart-3/20 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-chart-3" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground" data-testid="text-community-members">
+              <span className="text-xl sm:text-2xl font-bold text-card-foreground" data-testid="text-community-members">
                 {membersLoading ? '...' : stats.communityMembers.toLocaleString()}
               </span>
             </div>
-            <h3 className="font-medium text-card-foreground mb-1">Community Members</h3>
-            <p className="text-sm text-muted-foreground">Active participants</p>
+            <h3 className="text-sm sm:text-base font-medium text-card-foreground mb-1">Community Members</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">Active participants</p>
           </CardContent>
         </Card>
       </motion.div>
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Trending Issues */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -261,9 +294,9 @@ export default function Dashboard() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="lg:col-span-2"
         >
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-gradient">Trending Issues</h2>
-            <Button variant="ghost" className="text-primary hover:underline" data-testid="button-view-all-issues" onClick={() => window.dispatchEvent(new CustomEvent('navigate-view', { detail: { view: 'issues' } }))}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gradient">Trending Issues</h2>
+            <Button variant="ghost" size="sm" className="text-primary hover:underline text-sm" data-testid="button-view-all-issues" onClick={() => window.dispatchEvent(new CustomEvent('navigate-view', { detail: { view: 'issues' } }))}>
               View all
             </Button>
           </div>
@@ -320,9 +353,9 @@ export default function Dashboard() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
         >
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gradient">Active Campaigns</h2>
-            <Button variant="ghost" size="sm" className="text-primary hover:underline" data-testid="button-view-all-campaigns" onClick={() => window.dispatchEvent(new CustomEvent('navigate-view', { detail: { view: 'campaigns' } }))}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gradient">Active Campaigns</h2>
+            <Button variant="ghost" size="sm" className="text-primary hover:underline text-sm" data-testid="button-view-all-campaigns" onClick={() => window.dispatchEvent(new CustomEvent('navigate-view', { detail: { view: 'campaigns' } }))}>
               View all
             </Button>
           </div>

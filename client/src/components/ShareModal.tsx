@@ -33,7 +33,7 @@ export default function ShareModal({ isOpen, onClose, post }: ShareModalProps) {
   const [copied, setCopied] = useState(false);
 
   // Generate shareable link
-  const shareUrl = `${window.location.origin}/post/${post.id}`;
+  const shareUrl = `https://solvetogather.onrender.com/post/${post.id}`;
   const shareText = `${post.title} - ${post.description}`;
 
   const handleCopyLink = async () => {
@@ -113,21 +113,21 @@ export default function ShareModal({ isOpen, onClose, post }: ShareModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+      <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Share2 className="w-5 h-5 text-orange-500" />
+          <DialogTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+            <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
             <span>Share {post.type === 'issue' ? 'Issue' : 'Campaign'}</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Post Preview */}
-          <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-            <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">
+          <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+            <h3 className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-200 mb-2">
               {post.title}
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
               {post.description}
             </p>
             {post.authorName && (
@@ -138,11 +138,11 @@ export default function ShareModal({ isOpen, onClose, post }: ShareModalProps) {
           </div>
 
           {/* Social Media Buttons */}
-          <div className="space-y-4">
-            <h4 className="font-medium text-slate-800 dark:text-slate-200">
+          <div className="space-y-3 sm:space-y-4">
+            <h4 className="text-sm sm:text-base font-medium text-slate-800 dark:text-slate-200">
               Share on social media
             </h4>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               {socialPlatforms.map((platform) => {
                 const Icon = platform.icon;
                 return (
@@ -166,21 +166,21 @@ export default function ShareModal({ isOpen, onClose, post }: ShareModalProps) {
           </div>
 
           {/* Copy Link Section */}
-          <div className="space-y-3">
-            <h4 className="font-medium text-slate-800 dark:text-slate-200">
+          <div className="space-y-2 sm:space-y-3">
+            <h4 className="text-sm sm:text-base font-medium text-slate-800 dark:text-slate-200">
               Copy link
             </h4>
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
               <Input
                 value={shareUrl}
                 readOnly
-                className="flex-1 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                className="flex-1 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs sm:text-sm"
               />
               <Button
                 onClick={handleCopyLink}
                 variant={copied ? "default" : "outline"}
                 size="sm"
-                className={copied ? "bg-green-600 hover:bg-green-700" : ""}
+                className={`${copied ? "bg-green-600 hover:bg-green-700" : ""} w-full sm:w-auto`}
               >
                 {copied ? (
                   <>

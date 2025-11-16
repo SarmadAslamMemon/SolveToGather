@@ -1,7 +1,21 @@
+// Load environment variables from root .env file
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load .env file from project root (one level up from server directory)
+const envPath = resolve(__dirname, '..', '.env');
+dotenv.config({ path: envPath });
+console.log('[Server] Loading environment variables from:', envPath);
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase, seedDatabase } from "./firebase";
+import { verifyEmailConnection } from "./email";
 
 const app = express();
 
@@ -67,6 +81,9 @@ app.use((req, res, next) => {
   try {
     // Initialize Firebase database
     await initializeDatabase();
+    
+    // Verify email connection (optional, logs warning if not configured)
+    await verifyEmailConnection();
     
     // Seed database with sample data (only in development)
     if (process.env.NODE_ENV === 'development') {

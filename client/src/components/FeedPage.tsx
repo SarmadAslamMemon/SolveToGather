@@ -62,23 +62,23 @@ const PostCard = ({ post, onOpenPost, onShare, onDonate, onAuthorClick }: {
     >
       <Card className="bg-card border-border hover:shadow-lg transition-shadow duration-300 overflow-hidden">
         {/* Post Header */}
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <Avatar className="w-12 h-12 cursor-pointer" onClick={() => onAuthorClick(post.authorId)}>
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+            <Avatar className="w-10 h-10 sm:w-12 sm:h-12 cursor-pointer flex-shrink-0" onClick={() => onAuthorClick(post.authorId)}>
               <AvatarImage src={post.authorImage || ''} />
-              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-orange-500 text-white">
+              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-orange-500 text-white text-sm sm:text-base">
                 {post.authorName?.charAt(0) || post.title?.charAt(0) || 'U'}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <div className="flex items-center space-x-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-2 flex-wrap gap-1">
                 <h3 
-                  className="font-semibold text-card-foreground hover:text-primary cursor-pointer transition-colors"
+                  className="font-semibold text-sm sm:text-base text-card-foreground hover:text-primary cursor-pointer transition-colors truncate"
                   onClick={() => onAuthorClick(post.authorId)}
                 >
                   {post.authorName || 'Community Leader'}
                 </h3>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                <span className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                   post.type === 'issue' 
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
                     : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
@@ -86,37 +86,37 @@ const PostCard = ({ post, onOpenPost, onShare, onDonate, onAuthorClick }: {
                   {post.type === 'issue' ? 'Issue' : 'Campaign'}
                 </span>
               </div>
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <Clock className="w-4 h-4" />
-                <span>{formatTimeAgo(post.createdAt)}</span>
+              <div className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm text-muted-foreground flex-wrap">
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="truncate">{formatTimeAgo(post.createdAt)}</span>
                 <span>•</span>
-                <span>{post.communityName || 'Community'}</span>
+                <span className="truncate">{post.communityName || 'Community'}</span>
               </div>
             </div>
           </div>
 
           {/* Post Content */}
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-card-foreground mb-3">
+          <div className="mb-3 sm:mb-4">
+            <h2 className="text-lg sm:text-xl font-bold text-card-foreground mb-2 sm:mb-3">
               {post.title}
             </h2>
-            <p className="text-muted-foreground leading-relaxed">
+            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed line-clamp-3 sm:line-clamp-none">
               {post.description}
             </p>
           </div>
 
           {/* Campaign Progress */}
           {post.type === 'campaign' && post.goal && (
-            <div className="mb-4 p-4 bg-gradient-to-r from-orange-50 to-blue-50 dark:from-orange-900/20 dark:to-blue-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-card-foreground">Fundraising Progress</span>
-                <span className="text-sm font-bold text-card-foreground">
+            <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-gradient-to-r from-orange-50 to-blue-50 dark:from-orange-900/20 dark:to-blue-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 sm:gap-0 mb-2">
+                <span className="text-xs sm:text-sm font-medium text-card-foreground">Fundraising Progress</span>
+                <span className="text-xs sm:text-sm font-bold text-card-foreground">
                   {formatCurrency(post.raised || 0)} / {formatCurrency(post.goal)}
                 </span>
               </div>
               <Progress 
                 value={Math.min(((post.raised || 0) / post.goal) * 100, 100)} 
-                className="h-3 mb-2"
+                className="h-2 sm:h-3 mb-2"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>{Math.round(((post.raised || 0) / post.goal) * 100)}% funded</span>
@@ -127,12 +127,12 @@ const PostCard = ({ post, onOpenPost, onShare, onDonate, onAuthorClick }: {
 
           {/* Images */}
           {((post.images && post.images.length > 0) || post.image) && (
-            <div className="mb-4">
+            <div className="mb-3 sm:mb-4">
               <div className="relative bg-muted rounded-lg overflow-hidden">
                 <img
                   src={(post.images && post.images[0]) || post.image}
                   alt={post.title}
-                  className="w-full h-64 object-cover cursor-pointer"
+                  className="w-full h-48 sm:h-64 object-cover cursor-pointer"
                   onClick={() => onOpenPost(post)}
                 />
                 
@@ -169,8 +169,8 @@ const PostCard = ({ post, onOpenPost, onShare, onDonate, onAuthorClick }: {
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t border-border">
-            <div className="flex items-center space-x-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0 pt-3 sm:pt-4 border-t border-border">
+            <div className="flex items-center justify-around sm:justify-start space-x-4 sm:space-x-6">
               <Button
                 variant="ghost"
                 size="sm"
@@ -179,13 +179,13 @@ const PostCard = ({ post, onOpenPost, onShare, onDonate, onAuthorClick }: {
                   toggleLike();
                 }}
                 disabled={likeLoading}
-                className={`flex items-center space-x-2 transition-colors ${
+                className={`flex items-center space-x-1 sm:space-x-2 transition-colors text-xs sm:text-sm ${
                   isLiked 
                     ? 'text-red-500 hover:text-red-600' 
                     : 'text-muted-foreground hover:text-red-500'
                 }`}
               >
-                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isLiked ? 'fill-current' : ''}`} />
                 <span>{post.likesCount || 0}</span>
               </Button>
 
@@ -196,9 +196,9 @@ const PostCard = ({ post, onOpenPost, onShare, onDonate, onAuthorClick }: {
                   e.stopPropagation();
                   onOpenPost(post);
                 }}
-                className="flex items-center space-x-2 text-muted-foreground hover:text-blue-500 transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 text-muted-foreground hover:text-blue-500 transition-colors text-xs sm:text-sm"
               >
-                <MessageCircle className="w-5 h-5" />
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>{post.commentsCount || 0}</span>
               </Button>
 
@@ -209,10 +209,10 @@ const PostCard = ({ post, onOpenPost, onShare, onDonate, onAuthorClick }: {
                   e.stopPropagation();
                   onShare(post);
                 }}
-                className="flex items-center space-x-2 text-muted-foreground hover:text-orange-500 transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 text-muted-foreground hover:text-orange-500 transition-colors text-xs sm:text-sm"
               >
-                <Share2 className="w-5 h-5" />
-                <span>Share</span>
+                <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">Share</span>
               </Button>
             </div>
 
@@ -223,16 +223,16 @@ const PostCard = ({ post, onOpenPost, onShare, onDonate, onAuthorClick }: {
                   e.stopPropagation();
                   onDonate(post.id);
                 }}
-                className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
+                className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white text-xs sm:text-sm w-full sm:w-auto"
               >
-                <Heart className="w-4 h-4 mr-2" />
+                <Heart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Donate Now
               </Button>
             )}
             {/* Goal Achieved Message for Campaigns */}
             {post.type === 'campaign' && Number(post.raised || 0) >= Number(post.goal || 0) && (
-              <div className="bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-2 text-center">
-                <p className="text-sm font-medium text-green-600 dark:text-green-400">
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg px-3 sm:px-4 py-2 text-center w-full sm:w-auto">
+                <p className="text-xs sm:text-sm font-medium text-green-600 dark:text-green-400">
                   ✓ Goal Achieved!
                 </p>
               </div>
@@ -377,20 +377,20 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="md:ml-64 p-4 sm:p-6">
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gradient mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gradient mb-2">
               Community Feed
             </h1>
-            <p className="text-muted-foreground">Discover what's happening across all communities</p>
+            <p className="text-sm sm:text-base text-muted-foreground">Discover what's happening across all communities</p>
           </div>
         </div>
       </motion.header>
@@ -400,34 +400,35 @@ export default function FeedPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="all" className="flex items-center space-x-2">
-              <span>All Posts</span>
-              <span className="bg-primary/20 text-primary px-2 py-1 rounded-full text-xs">
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+            <TabsTrigger value="all" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-2 sm:py-3 text-xs sm:text-sm">
+              <span className="hidden sm:inline">All Posts</span>
+              <span className="sm:hidden">All</span>
+              <span className="hidden sm:inline bg-primary/20 text-primary px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs">
                 {allPosts.length}
               </span>
             </TabsTrigger>
-            <TabsTrigger value="issue" className="flex items-center space-x-2">
-              <AlertTriangle className="w-4 h-4" />
+            <TabsTrigger value="issue" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-2 sm:py-3 text-xs sm:text-sm">
+              <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>Issues</span>
-              <span className="bg-blue-500/20 text-blue-500 px-2 py-1 rounded-full text-xs">
+              <span className="hidden sm:inline bg-blue-500/20 text-blue-500 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs">
                 {issues.length}
               </span>
             </TabsTrigger>
-            <TabsTrigger value="campaign" className="flex items-center space-x-2">
-              <DollarSign className="w-4 h-4" />
+            <TabsTrigger value="campaign" className="flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 py-2 sm:py-3 text-xs sm:text-sm">
+              <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>Campaigns</span>
-              <span className="bg-orange-500/20 text-orange-500 px-2 py-1 rounded-full text-xs">
+              <span className="hidden sm:inline bg-orange-500/20 text-orange-500 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs">
                 {campaigns.length}
               </span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value={activeTab} className="mt-6">
-            <div className="max-w-2xl mx-auto space-y-6">
+          <TabsContent value={activeTab} className="mt-4 sm:mt-6">
+            <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
               <AnimatePresence mode="wait">
                 {filteredPosts.length === 0 ? (
                   <motion.div
@@ -437,8 +438,8 @@ export default function FeedPage() {
                     exit={{ opacity: 0, y: -20 }}
                   >
                     <Card className="bg-card border-border">
-                      <CardContent className="p-8 text-center">
-                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CardContent className="p-6 sm:p-8 text-center">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                           {activeTab === 'issue' ? (
                             <AlertTriangle className="w-8 h-8 text-muted-foreground" />
                           ) : activeTab === 'campaign' ? (
@@ -486,11 +487,11 @@ export default function FeedPage() {
 
       {/* Post Modal */}
       <Dialog open={!!openPost} onOpenChange={handleClosePost}>
-        <DialogContent className="sm:max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-hidden p-0">
+        <DialogContent className="w-[95vw] sm:max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-hidden p-0">
           {openPost && (
             <div className="flex flex-col h-[90vh]">
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
                 <div 
                   className="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-2 -m-2 transition-colors"
                   onClick={() => handleAuthorClick(openPost.authorId)}
@@ -518,8 +519,8 @@ export default function FeedPage() {
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto min-h-0">
                 {/* Post Content */}
-                <div className="p-6">
-                  <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-4">
+                <div className="p-4 sm:p-6">
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-slate-200 mb-3 sm:mb-4">
                     {openPost.title}
                   </h2>
                   
@@ -585,8 +586,8 @@ export default function FeedPage() {
                 </div>
 
                 {/* Comments Section */}
-                <div className="border-t border-slate-200 dark:border-slate-700 p-6">
-                  <div className="flex items-center space-x-6 mb-6">
+                <div className="border-t border-slate-200 dark:border-slate-700 p-4 sm:p-6">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-6 mb-4 sm:mb-6">
                     <Button
                       variant="ghost"
                       size="sm"

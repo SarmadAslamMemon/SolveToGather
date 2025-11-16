@@ -156,30 +156,30 @@ export default function TransactionVerification() {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6">
+      <div className="p-4 sm:p-6">
         <LoadingSkeleton type="dashboard" />
       </div>
     );
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-4 sm:p-6">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gradient mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gradient mb-2">
               Transaction Verification
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               Review and verify pending transactions for your community
             </p>
           </div>
-          <Badge variant="secondary" className="text-lg px-4 py-2">
+          <Badge variant="secondary" className="text-sm sm:text-lg px-3 sm:px-4 py-1.5 sm:py-2">
             {transactions.length} Pending
           </Badge>
         </div>
@@ -190,16 +190,16 @@ export default function TransactionVerification() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="text-center py-12"
+          className="text-center py-8 sm:py-12"
         >
-          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-            <Check className="w-10 h-10 text-muted-foreground" />
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <Check className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" />
           </div>
-          <h3 className="text-xl font-semibold text-card-foreground mb-2">No Pending Transactions</h3>
-          <p className="text-muted-foreground">All transactions have been reviewed.</p>
+          <h3 className="text-lg sm:text-xl font-semibold text-card-foreground mb-2">No Pending Transactions</h3>
+          <p className="text-sm sm:text-base text-muted-foreground">All transactions have been reviewed.</p>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6">
           {transactions.map((transaction, index) => (
             <motion.div
               key={transaction.id}
@@ -208,46 +208,46 @@ export default function TransactionVerification() {
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
               <Card className="bg-card border-border hover:shadow-lg transition-shadow">
-                <CardHeader>
+                <CardHeader className="p-4 sm:p-6">
                   <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg mb-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base sm:text-lg mb-2 truncate">
                         Transaction #{transaction.id.slice(0, 8)}
                       </CardTitle>
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                         <div className="flex items-center space-x-1">
-                          <Clock className="w-4 h-4" />
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                           <span>{formatDate(transaction.createdAt)}</span>
                         </div>
-                        <Badge variant="outline">Pending</Badge>
+                        <Badge variant="outline" className="text-xs">Pending</Badge>
                       </div>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="space-y-3 sm:space-y-4">
                     {transaction.details && (
                       <>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                           <div>
-                            <Label className="text-sm font-medium text-muted-foreground">Sender</Label>
-                            <p className="text-base font-semibold">{transaction.details.senderName}</p>
+                            <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Sender</Label>
+                            <p className="text-sm sm:text-base font-semibold truncate">{transaction.details.senderName}</p>
                           </div>
                           <div>
-                            <Label className="text-sm font-medium text-muted-foreground">Payment Method</Label>
-                            <p className="text-base font-semibold">
+                            <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Payment Method</Label>
+                            <p className="text-sm sm:text-base font-semibold">
                               {getPaymentMethodName(transaction.details.paymentMethod)}
                             </p>
                           </div>
                           <div>
-                            <Label className="text-sm font-medium text-muted-foreground">Amount</Label>
-                            <p className="text-xl font-bold text-green-600">
+                            <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Amount</Label>
+                            <p className="text-lg sm:text-xl font-bold text-green-600">
                               {formatCurrency(transaction.totalAmount)}
                             </p>
                           </div>
                           <div>
-                            <Label className="text-sm font-medium text-muted-foreground">Required Amount</Label>
-                            <p className="text-base font-semibold">
+                            <Label className="text-xs sm:text-sm font-medium text-muted-foreground">Required Amount</Label>
+                            <p className="text-sm sm:text-base font-semibold">
                               {formatCurrency(transaction.requiredAmount)}
                             </p>
                           </div>
@@ -279,22 +279,22 @@ export default function TransactionVerification() {
                       </>
                     )}
 
-                    <div className="flex space-x-3 pt-4 border-t">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4 border-t">
                       <Button
                         onClick={() => handleVerify(transaction)}
                         disabled={isVerifying}
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base"
                       >
-                        <Check className="w-4 h-4 mr-2" />
+                        <Check className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                         Verify
                       </Button>
                       <Button
                         onClick={() => openRejectDialog(transaction)}
                         disabled={isVerifying}
                         variant="destructive"
-                        className="flex-1"
+                        className="flex-1 text-sm sm:text-base"
                       >
-                        <X className="w-4 h-4 mr-2" />
+                        <X className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                         Reject
                       </Button>
                     </div>
@@ -308,26 +308,26 @@ export default function TransactionVerification() {
 
       {/* Reject Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[95vw] sm:max-w-[500px] p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Reject Transaction</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Reject Transaction</DialogTitle>
+            <DialogDescription className="text-sm sm:text-base">
               Please provide a reason for rejecting this transaction. This will help the donor understand why their payment was not accepted.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="rejection-reason">Rejection Reason</Label>
+              <Label htmlFor="rejection-reason" className="text-sm sm:text-base">Rejection Reason</Label>
               <Textarea
                 id="rejection-reason"
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 placeholder="e.g., Receipt image is unclear, Amount mismatch, Invalid payment method..."
                 rows={4}
-                className="mt-1"
+                className="mt-1 text-sm sm:text-base"
               />
             </div>
-            <div className="flex justify-end space-x-3">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -336,6 +336,7 @@ export default function TransactionVerification() {
                   setSelectedTransaction(null);
                 }}
                 disabled={isVerifying}
+                className="w-full sm:w-auto text-sm sm:text-base"
               >
                 Cancel
               </Button>
@@ -343,6 +344,7 @@ export default function TransactionVerification() {
                 onClick={handleReject}
                 disabled={!rejectionReason.trim() || isVerifying}
                 variant="destructive"
+                className="w-full sm:w-auto text-sm sm:text-base"
               >
                 {isVerifying ? 'Rejecting...' : 'Reject Transaction'}
               </Button>

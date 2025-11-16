@@ -66,10 +66,10 @@ export default function ReportsList({ mode }: ReportsListProps) {
 
   if (loading) {
     return (
-      <div className="ml-64 p-6">
+      <div className="p-4 sm:p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {[1,2,3,4].map(i => <div key={i} className="h-24 bg-gray-200 rounded" />)}
           </div>
         </div>
@@ -78,37 +78,37 @@ export default function ReportsList({ mode }: ReportsListProps) {
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="p-4 sm:p-6">
       <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle>{mode === 'leader' ? 'Community Reports' : 'All Reports'}</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">{mode === 'leader' ? 'Community Reports' : 'All Reports'}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           <div className="space-y-3">
             {reports.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No reports found.</div>
+              <div className="text-sm text-muted-foreground text-center py-4">No reports found.</div>
             ) : (
               reports.map((report) => (
-                <div key={report.id} className="p-4 border rounded-lg flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-card-foreground truncate">{report.subject}</h3>
-                      <Badge variant={report.isResolved ? 'secondary' : 'destructive'}>
+                <div key={report.id} className="p-3 sm:p-4 border rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                  <div className="flex-1 min-w-0 w-full sm:w-auto">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <h3 className="font-medium text-sm sm:text-base text-card-foreground truncate">{report.subject}</h3>
+                      <Badge variant={report.isResolved ? 'secondary' : 'destructive'} className="text-xs">
                         {report.isResolved ? 'Resolved' : 'Open'}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{report.description}</p>
-                    <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-4">
+                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{report.description}</p>
+                    <div className="text-xs text-muted-foreground mt-2 flex flex-col sm:flex-row flex-wrap gap-1 sm:gap-4">
                       <span>From: {report.fromUserName}</span>
                       <span>To: {report.target === 'community_leader' ? 'Community Leader' : 'Super Admin'}</span>
                     </div>
-                    <Button variant="link" className="px-0 mt-1" onClick={() => setSelectedReport(report)}>View</Button>
+                    <Button variant="link" className="px-0 mt-1 text-xs sm:text-sm h-auto" onClick={() => setSelectedReport(report)}>View</Button>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleToggleResolved(report.id, report.isResolved)}>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                    <Button variant="outline" size="sm" onClick={() => handleToggleResolved(report.id, report.isResolved)} className="text-xs sm:text-sm w-full sm:w-auto">
                       {report.isResolved ? 'Mark Open' : 'Mark Resolved'}
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleDelete(report.id)}>Delete</Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDelete(report.id)} className="text-xs sm:text-sm w-full sm:w-auto">Delete</Button>
                   </div>
                 </div>
               ))
@@ -118,19 +118,19 @@ export default function ReportsList({ mode }: ReportsListProps) {
       </Card>
 
       <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-        <DialogContent className="sm:max-w-lg bg-card border-border">
+        <DialogContent className="w-[95vw] sm:max-w-lg bg-card border-border p-4 sm:p-6">
           {selectedReport && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-card-foreground">{selectedReport.subject}</DialogTitle>
+                <DialogTitle className="text-base sm:text-lg text-card-foreground">{selectedReport.subject}</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
-                <div className="text-sm text-muted-foreground">From: {selectedReport.fromUserName}</div>
-                <div className="text-sm text-muted-foreground">To: {selectedReport.target === 'community_leader' ? 'Community Leader' : 'Super Admin'}</div>
-                <p className="text-card-foreground whitespace-pre-wrap">{selectedReport.description}</p>
-                <div className="flex gap-2 justify-end pt-2">
-                  <Button variant="outline" onClick={() => setSelectedReport(null)}>Close</Button>
-                  <Button onClick={() => { handleToggleResolved(selectedReport.id, selectedReport.isResolved); setSelectedReport({ ...selectedReport, isResolved: !selectedReport.isResolved }); }}>
+                <div className="text-xs sm:text-sm text-muted-foreground">From: {selectedReport.fromUserName}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">To: {selectedReport.target === 'community_leader' ? 'Community Leader' : 'Super Admin'}</div>
+                <p className="text-sm sm:text-base text-card-foreground whitespace-pre-wrap">{selectedReport.description}</p>
+                <div className="flex flex-col sm:flex-row gap-2 justify-end pt-2">
+                  <Button variant="outline" onClick={() => setSelectedReport(null)} className="w-full sm:w-auto text-sm sm:text-base">Close</Button>
+                  <Button onClick={() => { handleToggleResolved(selectedReport.id, selectedReport.isResolved); setSelectedReport({ ...selectedReport, isResolved: !selectedReport.isResolved }); }} className="w-full sm:w-auto text-sm sm:text-base">
                     {selectedReport.isResolved ? 'Mark Open' : 'Mark Resolved'}
                   </Button>
                 </div>

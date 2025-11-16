@@ -303,10 +303,10 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
 
   if (loading) {
     return (
-      <div className="ml-64 p-6">
+      <div className="md:ml-64 p-4 sm:p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="h-6 sm:h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-32 bg-gray-200 rounded"></div>
             ))}
@@ -317,22 +317,22 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
   }
 
   return (
-    <div className="ml-64 p-6">
+    <div className="md:ml-64 p-4 sm:p-6">
       {/* Super User Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8"
+        className="mb-6 sm:mb-8"
       >
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Super Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage all communities, campaigns, and users across the platform.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Super Admin Dashboard</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Manage all communities, campaigns, and users across the platform.</p>
           </div>
           <div className="flex items-center space-x-2">
-            <Crown className="w-6 h-6 text-yellow-500" />
-            <span className="text-sm font-medium text-foreground">Super Admin</span>
+            <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
+            <span className="text-xs sm:text-sm font-medium text-foreground">Super Admin</span>
           </div>
         </div>
       </motion.header>
@@ -343,41 +343,41 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8"
         >
         <Card className="bg-card border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-blue-500" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground">{communities.length}</span>
+              <span className="text-xl sm:text-2xl font-bold text-card-foreground">{communities.length}</span>
             </div>
-            <h3 className="font-medium text-card-foreground">Total Communities</h3>
+            <h3 className="text-sm sm:text-base font-medium text-card-foreground">Total Communities</h3>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                <Users className="w-6 h-6 text-green-500" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground">{users.length}</span>
+              <span className="text-xl sm:text-2xl font-bold text-card-foreground">{users.length}</span>
             </div>
-            <h3 className="font-medium text-card-foreground">Total Users</h3>
+            <h3 className="text-sm sm:text-base font-medium text-card-foreground">Total Users</h3>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                <Crown className="w-6 h-6 text-purple-500" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
               </div>
-              <span className="text-2xl font-bold text-card-foreground">{users.filter(u => u.role === 'community_leader').length}</span>
+              <span className="text-xl sm:text-2xl font-bold text-card-foreground">{users.filter(u => u.role === 'community_leader').length}</span>
             </div>
-            <h3 className="font-medium text-card-foreground">Community Leaders</h3>
+            <h3 className="text-sm sm:text-base font-medium text-card-foreground">Community Leaders</h3>
           </CardContent>
         </Card>
         </motion.div>
@@ -391,40 +391,41 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
         transition={{ duration: 0.3 }}
       >
                  {activeTab === 'communities' && (
-           <div className="space-y-6">
+           <div className="space-y-4 sm:space-y-6">
              <Card>
-               <CardHeader>
-                 <div className="flex justify-between items-center">
-                   <CardTitle>All Communities</CardTitle>
+               <CardHeader className="p-4 sm:p-6">
+                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                   <CardTitle className="text-lg sm:text-xl">All Communities</CardTitle>
                    <CreateCommunityModal onCommunityCreated={handleCommunityCreated} />
                  </div>
                </CardHeader>
-               <CardContent>
-                <div className="space-y-4">
+               <CardContent className="p-4 sm:p-6">
+                <div className="space-y-3 sm:space-y-4">
                   {communities.map((community) => (
-                    <div key={community.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                          <MapPin className="w-6 h-6 text-blue-500" />
+                    <div key={community.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 p-3 sm:p-4 border rounded-lg">
+                      <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
                         </div>
-                        <div>
-                          <h3 className="font-medium text-card-foreground">{community.name}</h3>
-                          <p className="text-sm text-muted-foreground">{community.location}</p>
-                          <div className="flex items-center space-x-4 mt-1">
-                            <span className="text-sm text-muted-foreground">{community.memberCount} members</span>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm sm:text-base font-medium text-card-foreground truncate">{community.name}</h3>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">{community.location}</p>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-4 mt-1">
+                            <span className="text-xs sm:text-sm text-muted-foreground">{community.memberCount} members</span>
                             {community.leaderName && (
-                              <Badge variant="secondary">Leader: {community.leaderName}</Badge>
+                              <Badge variant="secondary" className="text-xs">Leader: {community.leaderName}</Badge>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                         <Button
                           variant="destructive"
                           size="sm"
                           onClick={() => handleDeleteCommunity(community)}
+                          className="w-full sm:w-auto text-xs sm:text-sm"
                         >
-                          <Trash2 className="w-4 h-4 mr-1" />
+                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                           Delete
                         </Button>
                         {community.leaderId ? (
@@ -432,9 +433,11 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
                             variant="outline"
                             size="sm"
                             onClick={() => handleRemoveLeader(community.id)}
+                            className="w-full sm:w-auto text-xs sm:text-sm"
                           >
-                            <UserMinus className="w-4 h-4 mr-1" />
-                            Remove Leader
+                            <UserMinus className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                            <span className="hidden sm:inline">Remove Leader</span>
+                            <span className="sm:hidden">Remove</span>
                           </Button>
                         ) : (
                           <Select onValueChange={(userId) => {
@@ -450,7 +453,7 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
                               console.log('Either user not found or callback not available'); // Debug log
                             }
                           }}>
-                            <SelectTrigger className="w-40">
+                            <SelectTrigger className="w-full sm:w-40 text-xs sm:text-sm">
                               <SelectValue placeholder="Assign Leader" />
                             </SelectTrigger>
                             <SelectContent>
@@ -486,10 +489,10 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
 
         {activeTab === 'campaigns' && (
           <Card>
-            <CardHeader>
-              <CardTitle>All Fundraising Campaigns</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">All Fundraising Campaigns</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               <CampaignsList superAdminMode={true} />
             </CardContent>
           </Card>
@@ -497,33 +500,33 @@ export default function SuperUserPanel({ currentView, onUserRoleChange, onRefres
 
         {activeTab === 'issues' && (
           <Card>
-            <CardHeader>
-              <CardTitle>All Community Issues</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">All Community Issues</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               <IssuesList superAdminMode={true} />
             </CardContent>
           </Card>
         )}
 
         {activeTab === 'users' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Community Leaders</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">Community Leaders</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="p-4 sm:p-6">
+                <div className="space-y-3 sm:space-y-4">
                   {users.filter(u => u.role === 'community_leader').map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                          <Crown className="w-6 h-6 text-purple-500" />
+                    <div key={user.id} className="flex items-center justify-between p-3 sm:p-4 border rounded-lg">
+                      <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
                         </div>
-                        <div>
-                          <h3 className="font-medium text-card-foreground">{user.firstName} {user.lastName}</h3>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                          <Badge variant="secondary" className="mt-1">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm sm:text-base font-medium text-card-foreground truncate">{user.firstName} {user.lastName}</h3>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">{user.email}</p>
+                          <Badge variant="secondary" className="mt-1 text-xs">
                             {user.communityId ? `Leader of ${communities.find(c => c.id === user.communityId)?.name}` : 'Unassigned'}
                           </Badge>
                         </div>

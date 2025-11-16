@@ -96,9 +96,9 @@ export default function CreateCampaignModal({ isOpen, onClose }: CreateCampaignM
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { onClose(); } }}>
-      <DialogContent className="sm:max-w-lg bg-card border-border">
+      <DialogContent className="w-[95vw] sm:max-w-lg bg-card border-border p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-card-foreground">Raise Campaign</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl text-card-foreground">Raise Campaign</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -126,7 +126,7 @@ export default function CreateCampaignModal({ isOpen, onClose }: CreateCampaignM
               rows={4}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="campaign-goal" className="text-card-foreground">Goal (PKR)</Label>
               <Input
@@ -196,9 +196,9 @@ export default function CreateCampaignModal({ isOpen, onClose }: CreateCampaignM
               </p>
             </div>
           )}
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={() => { resetForm(); onClose(); }} disabled={isSubmitting}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Launching...' : 'Launch Campaign'}</Button>
+          <div className="flex flex-col sm:flex-row gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={() => { resetForm(); onClose(); }} disabled={isSubmitting} className="w-full sm:w-auto">Cancel</Button>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">{isSubmitting ? 'Launching...' : 'Launch Campaign'}</Button>
           </div>
         </form>
       </DialogContent>

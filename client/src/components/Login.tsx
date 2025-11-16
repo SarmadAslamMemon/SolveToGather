@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, HandHeart, User, MapPin, CreditCard, Phone } from 'lucide-react';
 import { getCommunities } from '@/services/firebase';
+import ForgotPasswordModal from '@/components/ForgotPasswordModal';
+import EmailVerificationModal from '@/components/EmailVerificationModal';
 
 interface SignupFormData {
   email: string;
@@ -58,9 +60,82 @@ export default function Login() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [communities, setCommunities] = useState<any[]>([]);
   const [loadingCommunities, setLoadingCommunities] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [verificationFirebaseUid, setVerificationFirebaseUid] = useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [unverifiedFirebaseUid, setUnverifiedFirebaseUid] = useState('');
   
-  const { login, register } = useAuth();
+  const { login, register, resendVerificationEmailByCredentials } = useAuth();
   const { toast } = useToast();
+
+  // Check for email verification callback from Firebase
+  useEffect(() => {
+    const checkEmailVerificationCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const mode = urlParams.get('mode');
+      const oobCode = urlParams.get('oobCode');
+      const apiKey = urlParams.get('apiKey');
+      
+      // Firebase email verification redirects with these parameters
+      if (mode === 'verifyEmail' && oobCode && apiKey) {
+        console.log('[Login] Email verification callback detected');
+        
+        try {
+          // Import Firebase auth functions and auth instance
+          const { applyActionCode, checkActionCode } = await import('firebase/auth');
+          const { auth } = await import('@/lib/firebase');
+          
+          // Verify the action code is valid
+          const actionCodeInfo = await checkActionCode(auth, oobCode);
+          console.log('[Login] Action code info:', actionCodeInfo);
+          
+          if (actionCodeInfo.operation === 'VERIFY_EMAIL') {
+            // Apply the verification
+            await applyActionCode(auth, oobCode);
+            console.log('[Login] ✅ Email verified successfully via link');
+            
+            // Get the email from the action code info
+            const verifiedEmail = actionCodeInfo.data.email;
+            
+            // Update Firestore user document
+            const { doc, updateDoc, collection, query, where, getDocs } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+            const usersRef = collection(db, 'users');
+            const userQuery = query(usersRef, where('email', '==', verifiedEmail));
+            const userSnapshot = await getDocs(userQuery);
+            
+            if (!userSnapshot.empty) {
+              const userDoc = userSnapshot.docs[0];
+              await updateDoc(doc(db, 'users', userDoc.id), { emailVerified: true });
+              console.log('[Login] ✅ Firestore user document updated');
+            }
+            
+            // Show success message
+            toast({
+              title: 'Email verified successfully!',
+              description: `Your email ${verifiedEmail} has been verified. You can now log in.`,
+            });
+            
+            // Clean up URL parameters
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (error: any) {
+          console.error('[Login] Error verifying email via link:', error);
+          toast({
+            title: 'Verification failed',
+            description: error.message || 'The verification link may have expired. Please request a new one.',
+            variant: 'destructive',
+          });
+          // Clean up URL parameters even on error
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+    };
+    
+    checkEmailVerificationCallback();
+  }, []);
 
   // Fetch communities on component mount
   useEffect(() => {
@@ -181,38 +256,91 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[Login] Form submitted, isRegister:', isRegister);
     setIsLoading(true);
 
     try {
       if (isRegister) {
+        console.log('[Login] Validating signup form...');
         if (!validateSignupForm()) {
+          console.error('[Login] Signup form validation failed');
           setIsLoading(false);
           return;
         }
+        console.log('[Login] Signup form validated, calling register...');
         
-        await register(signupData);
+        const result = await register(signupData);
+        console.log('[Login] Register successful, result:', result);
+        
+        // Show verification modal - set email and UID first, then open modal
+        console.log('[Login] Setting verification email:', result.email);
+        setVerificationEmail(result.email);
+        setVerificationFirebaseUid(result.firebaseUid);
+        
+        // Use setTimeout to ensure state updates are applied before opening modal
+        setTimeout(() => {
+          console.log('[Login] Opening verification modal...');
+          setIsVerificationModalOpen(true);
+          console.log('[Login] Verification modal state set to true');
+        }, 100);
+        
         toast({
           title: "Account created successfully!",
-          description: "Please log in with your credentials to continue.",
+          description: "Please verify your email address to continue.",
         });
-        // Reset form and switch to login mode
-        resetForm();
-        setIsRegister(false);
+        console.log('[Login] Toast notification shown');
       } else {
+        console.log('[Login] Attempting login...');
         await login(email, password);
+        console.log('[Login] Login successful');
         toast({
           title: "Welcome back!",
           description: "You have been logged in successfully",
         });
       }
     } catch (error: any) {
-      toast({
-        title: "Authentication failed",
-        description: error.message || "Please check your credentials and try again",
-        variant: "destructive",
-      });
+      console.error('[Login] Error during authentication:', error);
+      
+      // Handle email not verified error
+      if (error.code === 'auth/email-not-verified' || error.message === 'EMAIL_NOT_VERIFIED') {
+        console.log('[Login] Email not verified, showing verification modal');
+        const firebaseUser = error.firebaseUser;
+        if (firebaseUser && firebaseUser.email) {
+          setUnverifiedEmail(firebaseUser.email);
+          setUnverifiedFirebaseUid(firebaseUser.uid);
+          setIsVerificationModalOpen(true);
+          toast({
+            title: "Email not verified",
+            description: "Please verify your email address to continue. Check your inbox for the verification link.",
+            variant: "destructive",
+          });
+        } else if (error.userEmail) {
+          // Fallback if firebaseUser is not available but we have email
+          setUnverifiedEmail(error.userEmail);
+          setUnverifiedFirebaseUid(error.userUid || '');
+          setIsVerificationModalOpen(true);
+          toast({
+            title: "Email not verified",
+            description: "Please verify your email address to continue. Check your inbox for the verification link.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Email not verified",
+            description: "Please verify your email address before logging in. Check your inbox for the verification link.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Authentication failed",
+          description: error.message || "Please check your credentials and try again",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
+      console.log('[Login] Form submission complete, loading set to false');
     }
   };
 
@@ -580,7 +708,13 @@ export default function Login() {
                       <input type="checkbox" className="w-4 h-4 text-primary border-border rounded" />
                       <span className="ml-2 text-sm text-muted-foreground">Remember me</span>
                     </label>
-                    <a href="#" className="text-sm text-primary hover:underline">Forgot password?</a>
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotPasswordOpen(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </button>
                   </div>
                 </div>
               )}
@@ -611,6 +745,39 @@ export default function Login() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
+      />
+      <EmailVerificationModal
+        isOpen={isVerificationModalOpen}
+        onClose={() => {
+          setIsVerificationModalOpen(false);
+          if (isRegister) {
+            resetForm();
+            setIsRegister(false);
+          }
+          // Don't reset form if it's a login attempt - keep email/password
+        }}
+        email={unverifiedEmail || verificationEmail}
+        firebaseUid={unverifiedFirebaseUid || verificationFirebaseUid}
+        userPassword={unverifiedEmail ? password : undefined}
+        onVerified={() => {
+          setIsVerificationModalOpen(false);
+          setUnverifiedEmail('');
+          setUnverifiedFirebaseUid('');
+          if (isRegister) {
+            resetForm();
+            setIsRegister(false);
+          }
+          toast({
+            title: "Email verified!",
+            description: "You can now log in with your credentials.",
+          });
+        }}
+      />
     </div>
   );
 }
