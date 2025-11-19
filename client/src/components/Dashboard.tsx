@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getDoc, doc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getCommunities } from '@/services/firebase';
-import { Bell, Plus, AlertTriangle, DollarSign, Users, Heart, MessageCircle, Share2, ChevronLeft, ChevronRight, Clock, Send, X, MapPin } from 'lucide-react';
+import { Bell, Plus, AlertTriangle, DollarSign, Users, Heart, MessageCircle, Share2, ChevronLeft, ChevronRight, Clock, Send, MapPin } from 'lucide-react';
 
 export default function Dashboard() {
   const { currentUser } = useAuth();
@@ -450,10 +450,11 @@ export default function Dashboard() {
       {/* Post Modal */}
       <Dialog open={!!openPost} onOpenChange={handleClosePost}>
         <DialogContent className="sm:max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-hidden p-0">
+          <DialogTitle className="sr-only">{openPost?.title || 'Post Details'}</DialogTitle>
           {openPost && (
             <div className="flex flex-col h-[90vh]">
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center p-6 border-b border-slate-200 dark:border-slate-700">
                 <div 
                   className="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-2 -m-2 transition-colors"
                   onClick={() => handleAuthorClick(openPost.authorId)}
@@ -473,9 +474,6 @@ export default function Dashboard() {
                     </p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleClosePost}>
-                  <X className="w-5 h-5" />
-                </Button>
               </div>
 
               {/* Scrollable Content */}

@@ -51,13 +51,6 @@ interface PaymentMethod {
 }
 
 export default function PaymentMethods() {
-  console.log('[PaymentMethods] Component rendered');
-  console.log('[PaymentMethods] Current time:', new Date().toISOString());
-  
-  // Log the component stack
-  console.group('PaymentMethods Render Stack:');
-  console.trace('PaymentMethods rendered from:');
-  console.groupEnd();
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -77,59 +70,29 @@ export default function PaymentMethods() {
     isActive: true
   });
 
-  // Fetch payment methods with detailed logging
+  // Fetch payment methods
   useEffect(() => {
-    console.log('[PaymentMethods] Component mounted or updated');
-    console.log('[PaymentMethods] Current user:', currentUser);
-    console.log('[PaymentMethods] Current user community ID:', currentUser?.communityId);
-    
     const fetchPaymentMethods = async () => {
       if (!currentUser?.communityId) {
-        console.log('[PaymentMethods] No community ID available, cannot fetch payment methods');
         return;
       }
 
       try {
-        console.log('[PaymentMethods] Starting to fetch payment methods...');
         setLoading(true);
         
         // First, try to get all documents without any filters to test the connection
-        console.log('[PaymentMethods] Attempting to fetch ALL payment methods (testing connection)...');
         const allDocsSnapshot = await getDocs(collection(db, 'paymentMethod'));
-        console.log(`[PaymentMethods] Found ${allDocsSnapshot.size} total payment methods in the collection`);
-        
-        if (allDocsSnapshot.size > 0) {
-          console.log('[PaymentMethods] First document sample:', allDocsSnapshot.docs[0].id, allDocsSnapshot.docs[0].data());
-        }
         
         // Now try with the community filter
-        console.log(`[PaymentMethods] Now querying for communityId: ${currentUser.communityId}`);
         const q = query(
           collection(db, 'paymentMethod'),
           where('communityId', '==', currentUser.communityId)
         );
         
-        console.log('[PaymentMethods] Executing query...');
         const snapshot = await getDocs(q);
-        console.log(`[PaymentMethods] Query returned ${snapshot.size} documents`);
-        
-        if (snapshot.empty) {
-          console.warn('[PaymentMethods] No documents found for the community. This could be due to:');
-          console.warn(`1. No documents exist in the 'paymentMethod' collection`);
-          console.warn(`2. Documents exist but don't have a 'communityId' field`);
-          console.warn(`3. The 'communityId' in the documents doesn't match: ${currentUser.communityId}`);
-          console.warn('4. Security rules might be preventing access to the documents');
-          
-          // Log all available documents for debugging
-          console.log('[PaymentMethods] Available documents in collection:');
-          allDocsSnapshot.forEach(doc => {
-            console.log(`- ${doc.id}:`, doc.data());
-          });
-        }
         
         const methods = snapshot.docs.map(doc => {
           const data = doc.data();
-          console.log(`[PaymentMethods] Processing document ${doc.id}:`, data);
           
           // Convert Firestore timestamps to Date objects if needed
           const processTimestamp = (timestamp: any) => {
@@ -152,7 +115,6 @@ export default function PaymentMethods() {
           } as PaymentMethod;
         });
         
-        console.log(`[PaymentMethods] Processed ${methods.length} payment methods`);
         setPaymentMethods(methods);
       } catch (error) {
         console.error('Error fetching payment methods:', error);
@@ -389,21 +351,6 @@ export default function PaymentMethods() {
     );
   }
 
-  // Log before render
-  console.log('[PaymentMethods] Rendering with payment methods:', {
-    count: paymentMethods.length,
-    methods: paymentMethods,
-    currentUserCommunityId: currentUser?.communityId,
-    hasPaymentMethods: paymentMethods.length > 0
-  });
-  
-  // Log the first payment method's structure if available
-  if (paymentMethods.length > 0) {
-    console.log('[PaymentMethods] First payment method structure:', {
-      keys: Object.keys(paymentMethods[0]),
-      values: paymentMethods[0]
-    });
-  }
   
   return (
     <div className="p-4 sm:p-6">
@@ -446,7 +393,7 @@ export default function PaymentMethods() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
                     <div className="flex-shrink-0">
-                      {getPaymentMethodIcon(method.type)}
+                    {getPaymentMethodIcon(method.type)}
                     </div>
                     <div className="min-w-0 flex-1">
                       <CardTitle className="text-base sm:text-lg truncate">{getPaymentMethodName(method.type)}</CardTitle>

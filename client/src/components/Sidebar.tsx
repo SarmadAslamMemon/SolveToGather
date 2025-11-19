@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,28 +42,109 @@ interface SidebarProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export default function Sidebar({ currentView, onViewChange, isOpen, onOpenChange }: SidebarProps) {
+// Component instance counter for tracking mounts
+let sidebarInstanceId = 0;
+
+const DEBUG = import.meta.env.DEV;
+
+function Sidebar({ currentView, onViewChange, isOpen, onOpenChange }: SidebarProps) {
+  // Track component instance
+  const [instanceId] = useState(() => {
+    sidebarInstanceId++;
+    return sidebarInstanceId;
+  });
+
   const { currentUser, logout, selectedRole, setSelectedRole } = useAuth();
   const { toast } = useToast();
   const [uploadingImage, setUploadingImage] = useState(false);
   const [communityName, setCommunityName] = useState<string | null>(null);
   const { unreadCount: notificationCount } = useNotificationContext();
   const isMobile = useIsMobile();
+  const [isClient, setIsClient] = useState(false);
+  const renderTypeRef = useRef<'mobile' | 'desktop' | null>(null);
+  
+  // Track when we've determined the render type to prevent switching
+  const hasDeterminedRenderType = useRef(false);
 
-  // Fetch community name
+  // Prevent hydration mismatch by waiting for client-side mount
+  useEffect(() => {
+    setIsClient(true);
+  }, [instanceId]);
+
+  // Calculate render type early for use in effects
+  // Lock in the render type once determined (prevents switching between mobile/desktop)
+  if (isClient && !hasDeterminedRenderType.current) {
+    hasDeterminedRenderType.current = true;
+    renderTypeRef.current = isMobile ? 'mobile' : 'desktop';
+  }
+  
+  // If render type is locked, use the locked type instead of current detection
+  const finalRenderType = hasDeterminedRenderType.current && renderTypeRef.current 
+    ? renderTypeRef.current 
+    : (isMobile ? 'mobile' : 'desktop');
+
+  // DOM check: Verify only one sidebar exists in the DOM
+  useEffect(() => {
+    if (isClient && finalRenderType === 'desktop') {
+      const desktopSidebars = document.querySelectorAll('[data-sidebar-type="desktop"]');
+      const mobileSidebars = document.querySelectorAll('[data-sidebar-type="mobile"]');
+      
+      if (desktopSidebars.length > 1) {
+        console.error(`[Sidebar #${instanceId}] ⚠️⚠️⚠️ MULTIPLE DESKTOP SIDEBARS DETECTED IN DOM: ${desktopSidebars.length}`);
+        // Remove duplicates, keep only the first one
+        for (let i = 1; i < desktopSidebars.length; i++) {
+          console.error(`[Sidebar #${instanceId}] Removing duplicate desktop sidebar #${i}`);
+          desktopSidebars[i].remove();
+        }
+      }
+      
+      if (mobileSidebars.length > 0 && desktopSidebars.length > 0) {
+        console.error(`[Sidebar #${instanceId}] ⚠️⚠️⚠️ BOTH MOBILE AND DESKTOP SIDEBARS DETECTED IN DOM!`);
+        // Remove mobile sidebars if desktop is active
+        mobileSidebars.forEach((sidebar, index) => {
+          console.error(`[Sidebar #${instanceId}] Removing mobile sidebar #${index} (desktop is active)`);
+          sidebar.remove();
+        });
+      }
+    }
+    
+    if (isClient && finalRenderType === 'mobile') {
+      const desktopSidebars = document.querySelectorAll('[data-sidebar-type="desktop"]');
+      const mobileSidebars = document.querySelectorAll('[data-sidebar-type="mobile"]');
+      
+      if (mobileSidebars.length > 1) {
+        console.error(`[Sidebar #${instanceId}] ⚠️⚠️⚠️ MULTIPLE MOBILE SIDEBARS DETECTED IN DOM: ${mobileSidebars.length}`);
+        // Remove duplicates, keep only the first one
+        for (let i = 1; i < mobileSidebars.length; i++) {
+          console.error(`[Sidebar #${instanceId}] Removing duplicate mobile sidebar #${i}`);
+          mobileSidebars[i].remove();
+        }
+      }
+      
+      if (desktopSidebars.length > 0 && mobileSidebars.length > 0) {
+        console.error(`[Sidebar #${instanceId}] ⚠️⚠️⚠️ BOTH MOBILE AND DESKTOP SIDEBARS DETECTED IN DOM!`);
+        // Remove desktop sidebars if mobile is active
+        desktopSidebars.forEach((sidebar, index) => {
+          console.error(`[Sidebar #${instanceId}] Removing desktop sidebar #${index} (mobile is active)`);
+          sidebar.remove();
+        });
+      }
+    }
+  }, [isClient, finalRenderType, instanceId]);
+
+  // Fetch community name - only update if it actually changed
   useEffect(() => {
     const fetchCommunityName = async () => {
       if (!currentUser?.communityId) {
-        setCommunityName(null);
+        setCommunityName(prev => prev !== null ? null : prev);
         return;
       }
 
       try {
         const communities = await getCommunities();
         const community = communities.find((c: any) => c.id === currentUser.communityId);
-        if (community) {
-          setCommunityName(community.name);
-        }
+        const newName = community?.name || null;
+        setCommunityName(prev => prev !== newName ? newName : prev);
       } catch (error) {
         console.error('Error fetching community name:', error);
       }
@@ -71,7 +153,7 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onOpenChang
     fetchCommunityName();
   }, [currentUser?.communityId]);
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !currentUser) return;
 
@@ -95,9 +177,9 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onOpenChang
     } finally {
       setUploadingImage(false);
     }
-  };
+  }, [currentUser, toast]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await logout();
       toast({
@@ -111,7 +193,7 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onOpenChang
         variant: "destructive",
       });
     }
-  };
+  }, [logout, toast]);
 
   // Role-based variables
   const isSuperUser = currentUser?.role === 'super_user';
@@ -162,15 +244,17 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onOpenChang
   const items = getMenuItems();
 
   // Handler for navigation that also closes mobile sidebar
-  const handleNavigation = (view: string) => {
+  // Memoized to prevent re-renders
+  const handleNavigation = useCallback((view: string) => {
     onViewChange(view);
     if (isMobile && onOpenChange) {
       onOpenChange(false);
     }
-  };
+  }, [onViewChange, isMobile, onOpenChange]);
 
   // Sidebar content component (reusable for both mobile and desktop)
-  const SidebarContent = () => (
+  // Memoized to prevent re-renders when parent re-renders but dependencies haven't changed
+  const SidebarContent = useMemo(() => (
     <div className="flex h-full flex-col">
       <div className="p-4 sm:p-6 flex-1 overflow-y-auto no-scrollbar">
         {/* Logo */}
@@ -316,7 +400,6 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onOpenChang
                         return;
                       }
                     }
-                    console.log('Navigating to:', item.id); // Debug log
                     handleNavigation(item.id);
                   }}
                   className={`w-full flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-md transition-colors text-sm sm:text-base ${
@@ -327,7 +410,7 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onOpenChang
                   data-testid={`button-nav-${item.id}`}
                 >
                   <Icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                  <span className="truncate">{item.label}</span>
+                  <span className="truncate flex-1 min-w-0">{item.label}</span>
                   {item.id === 'notifications' && notificationCount > 0 && (
                     <span className="ml-auto bg-destructive text-destructive-foreground px-2 py-1 text-xs rounded-full flex-shrink-0">
                       {notificationCount}
@@ -350,7 +433,6 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onOpenChang
             >
               <button
                 onClick={() => {
-                  console.log('Navigating to notifications'); // Debug log
                   handleNavigation('notifications');
                 }}
                 className={`w-full flex items-center space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-md transition-colors text-sm sm:text-base ${
@@ -361,7 +443,7 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onOpenChang
                 data-testid="button-nav-notifications"
               >
                 <Bell className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                <span className="truncate">Notifications</span>
+                <span className="truncate flex-1 min-w-0">Notifications</span>
                 {notificationCount > 0 && (
                   <span className="ml-auto bg-destructive text-destructive-foreground px-2 py-1 text-xs rounded-full flex-shrink-0" data-testid="text-notification-count">
                     {notificationCount}
@@ -390,28 +472,88 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onOpenChang
         </Button>
       </motion.div>
     </div>
-  );
+  ), [
+    currentUser,
+    uploadingImage,
+    communityName,
+    isSuperUser,
+    isAdmin,
+    isCommunityLeader,
+    selectedRole,
+    items,
+    currentView,
+    notificationCount,
+    handleNavigation,
+    handleImageUpload,
+    handleLogout,
+    setSelectedRole,
+    isMobile,
+    onOpenChange
+  ]);
 
-  // Mobile: Use Sheet (drawer)
-  if (isMobile) {
+  // LOG 4: Render decision
+  // CRITICAL: Only render when isClient is true
+  // Once we've determined the render type, stick with it to prevent switching
+  const shouldRenderMobile = isClient && isMobile;
+  const shouldRenderDesktop = isClient && !isMobile;
+  
+  // Determine render type using locked type if available
+  const renderType: 'mobile' | 'desktop' | null = isClient ? finalRenderType : null;
+
+  // CRITICAL: Don't render anything until we know for sure which version to show
+  // This prevents double rendering (both mobile and desktop) during hydration
+  if (!isClient) {
+    return null;
+  }
+
+  // CRITICAL: Use locked render type to prevent switching
+  // Mobile: Use Sheet (drawer) - ONLY render mobile version
+  if (finalRenderType === 'mobile') {
     return (
-      <Sheet open={isOpen} onOpenChange={onOpenChange}>
-        <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
-          <SidebarContent />
+      <Sheet key={`sidebar-mobile-${instanceId}`} open={isOpen} onOpenChange={onOpenChange}>
+        <SheetContent 
+          side="left" 
+          className="w-[280px] sm:w-[320px] p-0"
+          data-sidebar-instance={instanceId}
+          data-sidebar-type="mobile"
+        >
+          {SidebarContent}
         </SheetContent>
       </Sheet>
     );
   }
 
-  // Desktop: Fixed sidebar
-  return (
-    <motion.aside
-      initial={{ x: -300 }}
-      animate={{ x: 0 }}
-      transition={{ duration: 0.3 }}
-      className="hidden md:flex fixed left-0 top-0 h-full w-64 bg-card border-r border-border z-30 overflow-hidden"
-    >
-      <SidebarContent />
-    </motion.aside>
-  );
+  // Desktop: Fixed sidebar - ONLY render desktop version
+  // This should only execute when finalRenderType is 'desktop'
+  if (finalRenderType === 'desktop') {
+    return (
+      <motion.aside
+        key={`sidebar-desktop-${instanceId}`}
+        initial={{ x: -300 }}
+        animate={{ x: 0 }}
+        transition={{ duration: 0.3 }}
+        className="hidden md:flex fixed left-0 top-0 h-full w-64 bg-card border-r border-border z-30 overflow-hidden"
+        data-sidebar-instance={instanceId}
+        data-sidebar-type="desktop"
+      >
+        {SidebarContent}
+      </motion.aside>
+    );
+  }
+
+  // Fallback: Should never reach here, but return null to be safe
+  return null;
 }
+
+// Memoize the entire component to prevent unnecessary re-renders when props haven't changed
+const MemoizedSidebar = React.memo(Sidebar, (prevProps, nextProps) => {
+  // Return true if props are equal (skip re-render), false if different (re-render)
+  const propsEqual = (
+    prevProps.currentView === nextProps.currentView &&
+    prevProps.isOpen === nextProps.isOpen
+  );
+  
+  return propsEqual;
+});
+
+export default MemoizedSidebar;

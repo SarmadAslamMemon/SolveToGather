@@ -338,7 +338,7 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl bg-gradient-to-br from-white to-blue-50 dark:from-slate-900 dark:to-slate-800 border-slate-200 dark:border-slate-700 h-[90vh] max-h-[90vh] overflow-hidden p-0 flex flex-col">
         <DialogHeader className="p-6 pb-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-blue-600 to-orange-500 text-white">
-          <DialogTitle className="flex items-center justify-between text-white">
+          <DialogTitle className="flex items-center text-white">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                 <Heart className="w-5 h-5 text-white" />
@@ -348,16 +348,13 @@ export default function DonationModal({ isOpen, onClose, campaign }: DonationMod
                 <p className="text-sm text-white/80">Support this important cause</p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleClose} className="text-white hover:bg-white/20" data-testid="button-close-modal">
-              <X className="w-5 h-5" />
-            </Button>
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto min-h-0">
         <AnimatePresence mode="wait">
           {/* Show goal achieved message if goal is reached */}
-          {isGoalReached && campaign && (
+          {isGoalReached && campaign && step !== 'processing' && step !== 'success' && (
             <motion.div
               key="goal-achieved"
               initial={{ opacity: 0, scale: 0.95 }}

@@ -461,16 +461,23 @@ export default function FeedPage() {
                     </Card>
                   </motion.div>
                 ) : (
-                  filteredPosts.map((post, index) => (
-                    <PostCard
-                      key={`${post.type}-${post.id}`}
-                      post={post}
-                      onOpenPost={handleOpenPost}
-                      onShare={handleShare}
-                      onDonate={handleDonate}
-                      onAuthorClick={handleAuthorClick}
-                    />
-                  ))
+                  <motion.div
+                    key="posts"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                  >
+                    {filteredPosts.map((post, index) => (
+                      <PostCard
+                        key={`${post.type}-${post.id}`}
+                        post={post}
+                        onOpenPost={handleOpenPost}
+                        onShare={handleShare}
+                        onDonate={handleDonate}
+                        onAuthorClick={handleAuthorClick}
+                      />
+                    ))}
+                  </motion.div>
                 )}
               </AnimatePresence>
             </div>
@@ -491,7 +498,7 @@ export default function FeedPage() {
           {openPost && (
             <div className="flex flex-col h-[90vh]">
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
                 <div 
                   className="flex items-center space-x-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-2 -m-2 transition-colors"
                   onClick={() => handleAuthorClick(openPost.authorId)}
@@ -511,9 +518,6 @@ export default function FeedPage() {
                     </p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={handleClosePost}>
-                  <X className="w-5 h-5" />
-                </Button>
               </div>
 
               {/* Scrollable Content */}

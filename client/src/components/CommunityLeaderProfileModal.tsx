@@ -104,13 +104,10 @@ export default function CommunityLeaderProfileModal({ isOpen, onClose, leader }:
           {/* Right Half - Details */}
           <div className="w-full sm:w-1/2 flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
               <DialogTitle className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-slate-200">
                 Leader Profile
               </DialogTitle>
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                <X className="w-4 h-4 sm:w-5 sm:h-5" />
-              </Button>
             </div>
 
             {/* Scrollable Content */}
