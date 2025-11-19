@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { subscribeToNotifications, subscribeToUnreadCount, type Notification } from '@/services/firebase';
 
@@ -24,14 +24,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log('🌍 NotificationContext: Setting up subscriptions for user', currentUser.id);
     setLoading(true);
 
     // Single subscription for notifications
     const unsubscribeNotifications = subscribeToNotifications(
       currentUser.id,
       (newNotifications) => {
-        console.log('🌍 NotificationContext: Received', newNotifications.length, 'notifications');
         setNotifications(newNotifications);
         setLoading(false);
       },
@@ -42,20 +40,24 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const unsubscribeUnread = subscribeToUnreadCount(
       currentUser.id,
       (count) => {
-        console.log('🌍 NotificationContext: Unread count update:', count);
         setUnreadCount(count);
       }
     );
 
     return () => {
-      console.log('🌍 NotificationContext: Cleaning up subscriptions');
       unsubscribeNotifications();
       unsubscribeUnread();
     };
   }, [currentUser?.id]);
 
+  const value = useMemo(() => ({
+    notifications,
+    unreadCount,
+    loading,
+  }), [notifications, unreadCount, loading]);
+
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, loading }}>
+    <NotificationContext.Provider value={value}>
       {children}
     </NotificationContext.Provider>
   );

@@ -80,8 +80,6 @@ export default function Login() {
       
       // Firebase email verification redirects with these parameters
       if (mode === 'verifyEmail' && oobCode && apiKey) {
-        console.log('[Login] Email verification callback detected');
-        
         try {
           // Import Firebase auth functions and auth instance
           const { applyActionCode, checkActionCode } = await import('firebase/auth');
@@ -89,12 +87,10 @@ export default function Login() {
           
           // Verify the action code is valid
           const actionCodeInfo = await checkActionCode(auth, oobCode);
-          console.log('[Login] Action code info:', actionCodeInfo);
           
           if (actionCodeInfo.operation === 'VERIFY_EMAIL') {
             // Apply the verification
             await applyActionCode(auth, oobCode);
-            console.log('[Login] ✅ Email verified successfully via link');
             
             // Get the email from the action code info
             const verifiedEmail = actionCodeInfo.data.email;
@@ -109,7 +105,6 @@ export default function Login() {
             if (!userSnapshot.empty) {
               const userDoc = userSnapshot.docs[0];
               await updateDoc(doc(db, 'users', userDoc.id), { emailVerified: true });
-              console.log('[Login] ✅ Firestore user document updated');
             }
             
             // Show success message
@@ -142,12 +137,9 @@ export default function Login() {
     const fetchCommunities = async () => {
       setLoadingCommunities(true);
       try {
-        console.log('🔍 Fetching communities...');
         const communitiesData = await getCommunities();
-        console.log('📊 Communities fetched:', communitiesData);
         
         if (!communitiesData || communitiesData.length === 0) {
-          console.warn('⚠️ No communities found in database');
           toast({
             title: "No Communities Available",
             description: "Please contact the administrator to create communities first.",
@@ -256,43 +248,32 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[Login] Form submitted, isRegister:', isRegister);
     setIsLoading(true);
 
     try {
       if (isRegister) {
-        console.log('[Login] Validating signup form...');
         if (!validateSignupForm()) {
-          console.error('[Login] Signup form validation failed');
           setIsLoading(false);
           return;
         }
-        console.log('[Login] Signup form validated, calling register...');
         
         const result = await register(signupData);
-        console.log('[Login] Register successful, result:', result);
         
         // Show verification modal - set email and UID first, then open modal
-        console.log('[Login] Setting verification email:', result.email);
         setVerificationEmail(result.email);
         setVerificationFirebaseUid(result.firebaseUid);
         
         // Use setTimeout to ensure state updates are applied before opening modal
         setTimeout(() => {
-          console.log('[Login] Opening verification modal...');
           setIsVerificationModalOpen(true);
-          console.log('[Login] Verification modal state set to true');
         }, 100);
         
         toast({
           title: "Account created successfully!",
           description: "Please verify your email address to continue.",
         });
-        console.log('[Login] Toast notification shown');
       } else {
-        console.log('[Login] Attempting login...');
         await login(email, password);
-        console.log('[Login] Login successful');
         toast({
           title: "Welcome back!",
           description: "You have been logged in successfully",
@@ -303,7 +284,6 @@ export default function Login() {
       
       // Handle email not verified error
       if (error.code === 'auth/email-not-verified' || error.message === 'EMAIL_NOT_VERIFIED') {
-        console.log('[Login] Email not verified, showing verification modal');
         const firebaseUser = error.firebaseUser;
         if (firebaseUser && firebaseUser.email) {
           setUnverifiedEmail(firebaseUser.email);
@@ -340,7 +320,6 @@ export default function Login() {
       }
     } finally {
       setIsLoading(false);
-      console.log('[Login] Form submission complete, loading set to false');
     }
   };
 

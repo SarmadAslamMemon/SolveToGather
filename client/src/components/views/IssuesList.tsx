@@ -152,10 +152,11 @@ export default function IssuesList({ superAdminMode = false }: IssuesListProps) 
       {/* Enhanced Issue Modal */}
       <Dialog open={!!openIssue} onOpenChange={() => setOpenIssue(null)}>
         <DialogContent className="w-[95vw] sm:max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-hidden p-0">
+          <DialogTitle className="sr-only">{openIssue?.title || 'Issue Details'}</DialogTitle>
           {openIssue && (
             <div className="flex flex-col h-[90vh]">
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
                 <div 
                   className="flex items-center space-x-2 sm:space-x-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-2 -m-2 transition-colors flex-1 min-w-0"
                   onClick={() => handleAuthorClick(openIssue.authorId)}
@@ -175,9 +176,6 @@ export default function IssuesList({ superAdminMode = false }: IssuesListProps) 
                     </p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setOpenIssue(null)} className="flex-shrink-0">
-                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                </Button>
               </div>
 
               {/* Scrollable Content */}

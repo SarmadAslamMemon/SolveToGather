@@ -522,6 +522,7 @@ export default function IssuesPage() {
       {/* Enhanced Issue Modal */}
       <Dialog open={!!openIssue} onOpenChange={() => setOpenIssue(null)}>
         <DialogContent className="w-[95vw] sm:max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-hidden p-0">
+          <DialogTitle className="sr-only">{openIssue?.title || 'Issue Details'}</DialogTitle>
           {openIssue && (
             <div className="flex flex-col h-[90vh]">
               {/* Modal Header */}

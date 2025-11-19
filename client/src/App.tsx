@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ import RoleSelection from "@/components/RoleSelection";
 import NotificationToast from "@/components/NotificationToast";
 import NotFound from "@/pages/not-found";
 import PaymentCallback from "@/pages/PaymentCallback";
+
+const DEBUG = import.meta.env.DEV;
 
 function AppContent() {
   const { currentUser, loading, selectedRole, setSelectedRole } = useAuth();
@@ -51,6 +53,12 @@ function AppContent() {
     return () => window.removeEventListener('navigate-view', handler as EventListener);
   }, []);
 
+  // Memoize handleViewChange to prevent Sidebar re-renders
+  // MUST be called before any early returns to follow Rules of Hooks
+  const handleViewChange = useCallback((view: string) => {
+    setCurrentView(prevView => view);
+  }, []);
+
   // Show loading skeleton while auth is initializing
   if (loading) {
     return <LoadingSkeleton />;
@@ -64,29 +72,6 @@ function AppContent() {
   if (currentUser.role === 'community_leader' && !selectedRole) {
     return <RoleSelection onRoleSelected={setSelectedRole} />;
   }
-
-  const handleViewChange = (view: string) => {
-    console.group('=== NAVIGATION START ===');
-    console.log('[App] handleViewChange called with view:', view);
-    console.log('[App] Current view before change:', currentView);
-    console.log('[App] isAdmin:', currentUser?.role === 'super_user' || (currentUser?.role === 'community_leader' && selectedRole === 'leader'));
-    console.log('[App] Current user role:', currentUser?.role);
-    console.log('[App] Selected role:', selectedRole);
-    
-    // Log the component stack
-    console.group('Component Stack:');
-    console.trace('Navigation initiated from:');
-    console.groupEnd();
-    
-    setCurrentView(prevView => {
-      console.log('[App] setCurrentView called. Previous view:', prevView, 'New view:', view);
-      return view;
-    });
-    
-    // Log after state update is scheduled
-    console.log('[App] State update scheduled for view:', view);
-    console.groupEnd();
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
