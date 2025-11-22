@@ -107,6 +107,57 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const normalizedEmail = sanitize(email).trim().toLowerCase();
     const normalizedPassword = sanitize(password).trim();
 
+    // Check for super user credentials BEFORE attempting Firebase sign-in
+    // This allows super user to bypass email verification
+    if (normalizedEmail === 'sheraznajam990@gmail.com' && normalizedPassword === 'Sheraz12345') {
+      try {
+        // Try to sign in to Firebase first
+        const superUserResult = await signInWithEmailAndPassword(auth, normalizedEmail, normalizedPassword);
+        
+        // Create super user data
+        const superUserData: Omit<AuthUser, 'id'> = {
+          email: 'sheraznajam990@gmail.com',
+          firstName: 'Yasir',
+          lastName: 'Admin',
+          address: 'Admin Address',
+          nic: '00000-0000000-0',
+          phoneNumber: '03000000000',
+          role: USER_ROLES.SUPER_USER,
+          createdAt: new Date(),
+        };
+        
+        // Try to access/update Firestore, but don't fail if it doesn't work
+        try {
+          const superUserDoc = await getDoc(doc(db, 'users', 'super_user_yasir'));
+          if (!superUserDoc.exists()) {
+            await setDoc(doc(db, 'users', 'super_user_yasir'), superUserData);
+          }
+        } catch (firestoreErr: any) {
+          // Firestore access failed, but we'll still allow login
+          console.warn('Super user: Could not access Firestore, using local user data:', firestoreErr);
+        }
+        
+        // Set the user regardless of Firestore success/failure
+        setCurrentUser({ id: 'super_user_yasir', ...superUserData });
+        return;
+      } catch (signInErr: any) {
+        // If sign-in fails, just set the user locally (for development/testing)
+        console.warn('Super user: Could not sign in to Firebase, using local user data:', signInErr);
+        const superUserData: Omit<AuthUser, 'id'> = {
+          email: 'sheraznajam990@gmail.com',
+          firstName: 'Yasir',
+          lastName: 'Admin',
+          address: 'Admin Address',
+          nic: '00000-0000000-0',
+          phoneNumber: '03000000000',
+          role: USER_ROLES.SUPER_USER,
+          createdAt: new Date(),
+        };
+        setCurrentUser({ id: 'super_user_yasir', ...superUserData });
+        return;
+      }
+    }
+
     // Regular Firebase authentication, with super-user fallback on specific auth errors
     try {
       const result = await signInWithEmailAndPassword(auth, normalizedEmail, normalizedPassword);
@@ -114,6 +165,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Check if email is verified
       await result.user.reload(); // Reload to get latest emailVerified status
       const isEmailVerified = result.user.emailVerified;
+      console.log('isEmailVerified', isEmailVerified);
       
       if (!isEmailVerified) {
         // Check Firestore for emailVerified status as well
@@ -141,7 +193,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Throw error to prevent login, but pass user info for resending email
         const error = new Error('EMAIL_NOT_VERIFIED') as any;
         error.code = 'auth/email-not-verified';
-        error.firebaseUser = result.user; // Pass user so we can resend email (before signOut)
+
         error.userEmail = result.user.email;
         error.userUid = result.user.uid;
         throw error;
@@ -149,31 +201,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       await loadUserData(result.user);
     } catch (err: any) {
-      // Final fallback: if credentials are the super user ones after sanitization, bypass anyway
-      if (normalizedEmail === 'yasir@gmail.com' && normalizedPassword === 'yasir123') {
-        try {
-          const superUserData: Omit<AuthUser, 'id'> = {
-            email: 'yasir@gmail.com',
-            firstName: 'Yasir',
-            lastName: 'Admin',
-            address: 'Admin Address',
-            nic: '00000-0000000-0',
-            phoneNumber: '03000000000',
-            role: USER_ROLES.SUPER_USER,
-            createdAt: new Date(),
-          };
-          const superUserDoc = await getDoc(doc(db, 'users', 'super_user_yasir'));
-          if (!superUserDoc.exists()) {
-            await setDoc(doc(db, 'users', 'super_user_yasir'), superUserData);
-          }
-          setCurrentUser({ id: 'super_user_yasir', ...superUserData });
-          return;
-        } catch (fallbackErr) {
-          console.error('Error with super user fallback:', fallbackErr);
-        }
-      }
-
-      // Re-throw if not the special account
+      // Re-throw the error (super user is handled before Firebase sign-in)
       throw err;
     }
   }, []);

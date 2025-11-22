@@ -102,7 +102,7 @@ function AppContent() {
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
           className={`min-h-screen transition-all duration-300 ${
-            isMobile ? 'pt-16' : 'md:ml-64'
+            isMobile ? 'pt-16' : 'md:ml-56 lg:ml-64'
           }`}
         >
           <MainContent currentView={currentView} />
