@@ -235,44 +235,44 @@ export default function IssueCard({ issue, onLike, onComment, onShare, onOpen, o
 
           {/* Action buttons */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLike}
-                disabled={isLiking}
-                className={`flex items-center space-x-2 transition-colors ${
-                  isLiked 
-                    ? 'text-red-500 hover:text-red-600' 
-                    : 'text-muted-foreground hover:text-red-500'
-                }`}
-                data-testid={`button-like-${issue.id}`}
-              >
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLike}
+              disabled={isLiking}
+              className={`flex items-center space-x-2 transition-colors ${
+                isLiked 
+                  ? 'text-red-500 hover:text-red-600' 
+                  : 'text-muted-foreground hover:text-red-500'
+              }`}
+              data-testid={`button-like-${issue.id}`}
+            >
                 <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isLiked ? 'fill-current' : ''}`} />
-                <span data-testid={`text-likes-${issue.id}`}>{likesCount}</span>
-              </Button>
+              <span data-testid={`text-likes-${issue.id}`}>{likesCount}</span>
+            </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleComment}
-                className="flex items-center space-x-2 text-muted-foreground hover:text-blue-500 transition-colors"
-                data-testid={`button-comment-${issue.id}`}
-              >
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleComment}
+              className="flex items-center space-x-2 text-muted-foreground hover:text-blue-500 transition-colors"
+              data-testid={`button-comment-${issue.id}`}
+            >
                 <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span data-testid={`text-comments-${issue.id}`}>{issue.commentsCount || 0}</span>
-              </Button>
+              <span data-testid={`text-comments-${issue.id}`}>{issue.commentsCount || 0}</span>
+            </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleShare}
-                className="flex items-center space-x-2 text-muted-foreground hover:text-orange-500 transition-colors"
-                data-testid={`button-share-${issue.id}`}
-              >
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShare}
+              className="flex items-center space-x-2 text-muted-foreground hover:text-orange-500 transition-colors"
+              data-testid={`button-share-${issue.id}`}
+            >
                 <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>Share</span>
-              </Button>
+              <span>Share</span>
+            </Button>
             </div>
             {canDelete && (
               <Button
