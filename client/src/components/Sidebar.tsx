@@ -83,54 +83,35 @@ function Sidebar({ currentView, onViewChange, isOpen, onOpenChange }: SidebarPro
     ? renderTypeRef.current 
     : (isMobile ? 'mobile' : 'desktop');
 
-  // DOM check: Verify only one sidebar exists in the DOM
+  // DEBUG: Log 1 - Sidebar mount/unmount and DOM element count
   useEffect(() => {
-    if (isClient && finalRenderType === 'desktop') {
+    if (isClient) {
+      // Check for duplicate sidebars in the DOM
+      const allSidebars = document.querySelectorAll('[data-sidebar-instance]');
       const desktopSidebars = document.querySelectorAll('[data-sidebar-type="desktop"]');
       const mobileSidebars = document.querySelectorAll('[data-sidebar-type="mobile"]');
       
-      if (desktopSidebars.length > 1) {
-        console.error(`[Sidebar #${instanceId}] ⚠️⚠️⚠️ MULTIPLE DESKTOP SIDEBARS DETECTED IN DOM: ${desktopSidebars.length}`);
-        // Remove duplicates, keep only the first one
-        for (let i = 1; i < desktopSidebars.length; i++) {
-          console.error(`[Sidebar #${instanceId}] Removing duplicate desktop sidebar #${i}`);
-          desktopSidebars[i].remove();
-        }
-      }
+      console.log('[Sidebar DEBUG 1] 🔍 DOM Check:', {
+        instanceId,
+        totalSidebarsInDOM: allSidebars.length,
+        desktopCount: desktopSidebars.length,
+        mobileCount: mobileSidebars.length,
+        finalRenderType,
+        windowWidth: window.innerWidth
+      });
       
-      if (mobileSidebars.length > 0 && desktopSidebars.length > 0) {
-        console.error(`[Sidebar #${instanceId}] ⚠️⚠️⚠️ BOTH MOBILE AND DESKTOP SIDEBARS DETECTED IN DOM!`);
-        // Remove mobile sidebars if desktop is active
-        mobileSidebars.forEach((sidebar, index) => {
-          console.error(`[Sidebar #${instanceId}] Removing mobile sidebar #${index} (desktop is active)`);
-          sidebar.remove();
-        });
-      }
-    }
-    
-    if (isClient && finalRenderType === 'mobile') {
-      const desktopSidebars = document.querySelectorAll('[data-sidebar-type="desktop"]');
-      const mobileSidebars = document.querySelectorAll('[data-sidebar-type="mobile"]');
-      
-      if (mobileSidebars.length > 1) {
-        console.error(`[Sidebar #${instanceId}] ⚠️⚠️⚠️ MULTIPLE MOBILE SIDEBARS DETECTED IN DOM: ${mobileSidebars.length}`);
-        // Remove duplicates, keep only the first one
-        for (let i = 1; i < mobileSidebars.length; i++) {
-          console.error(`[Sidebar #${instanceId}] Removing duplicate mobile sidebar #${i}`);
-          mobileSidebars[i].remove();
-        }
-      }
-      
-      if (desktopSidebars.length > 0 && mobileSidebars.length > 0) {
-        console.error(`[Sidebar #${instanceId}] ⚠️⚠️⚠️ BOTH MOBILE AND DESKTOP SIDEBARS DETECTED IN DOM!`);
-        // Remove desktop sidebars if mobile is active
-        desktopSidebars.forEach((sidebar, index) => {
-          console.error(`[Sidebar #${instanceId}] Removing desktop sidebar #${index} (mobile is active)`);
-          sidebar.remove();
+      // Warn if duplicates found
+      if (allSidebars.length > 1) {
+        console.warn('[Sidebar DEBUG 1] ⚠️ DUPLICATE SIDEBARS DETECTED!', {
+          sidebarInstances: Array.from(allSidebars).map(el => ({
+            instance: el.getAttribute('data-sidebar-instance'),
+            type: el.getAttribute('data-sidebar-type')
+          }))
         });
       }
     }
   }, [isClient, finalRenderType, instanceId]);
+
 
   // Fetch community name - only update if it actually changed
   useEffect(() => {
@@ -255,8 +236,8 @@ function Sidebar({ currentView, onViewChange, isOpen, onOpenChange }: SidebarPro
   // Sidebar content component (reusable for both mobile and desktop)
   // Memoized to prevent re-renders when parent re-renders but dependencies haven't changed
   const SidebarContent = useMemo(() => (
-    <div className="flex h-full flex-col">
-      <div className="p-3 md:p-4 lg:p-6 flex-1 overflow-y-auto no-scrollbar">
+    <div className="flex h-full flex-col w-full">
+      <div className="p-3 md:p-3 lg:p-4 flex-1 overflow-y-auto no-scrollbar">
         {/* Logo */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -459,7 +440,7 @@ function Sidebar({ currentView, onViewChange, isOpen, onOpenChange }: SidebarPro
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
-        className="p-3 md:p-4 lg:p-6 pt-3 md:pt-4 border-t border-border"
+        className="p-3 md:p-3 lg:p-4 pt-3 border-t border-border"
       >
         <Button
           onClick={handleLogout}
@@ -491,14 +472,13 @@ function Sidebar({ currentView, onViewChange, isOpen, onOpenChange }: SidebarPro
     onOpenChange
   ]);
 
-  // LOG 4: Render decision
-  // CRITICAL: Only render when isClient is true
-  // Once we've determined the render type, stick with it to prevent switching
-  const shouldRenderMobile = isClient && isMobile;
-  const shouldRenderDesktop = isClient && !isMobile;
-  
-  // Determine render type using locked type if available
-  const renderType: 'mobile' | 'desktop' | null = isClient ? finalRenderType : null;
+  // DEBUG: Log 2 - Track component mount/unmount
+  useEffect(() => {
+    console.log('[Sidebar DEBUG 2] 🟢 Component MOUNTED - Instance:', instanceId, 'Type:', finalRenderType);
+    return () => {
+      console.log('[Sidebar DEBUG 2] 🔴 Component UNMOUNTED - Instance:', instanceId);
+    };
+  }, [instanceId, finalRenderType]);
 
   // CRITICAL: Don't render anything until we know for sure which version to show
   // This prevents double rendering (both mobile and desktop) during hydration
@@ -532,7 +512,7 @@ function Sidebar({ currentView, onViewChange, isOpen, onOpenChange }: SidebarPro
         initial={{ x: -300 }}
         animate={{ x: 0 }}
         transition={{ duration: 0.3 }}
-        className="hidden md:flex fixed left-0 top-0 h-full w-56 lg:w-64 bg-card border-r border-border z-30 overflow-hidden"
+        className="hidden md:flex flex-col fixed left-0 top-0 h-full w-60 lg:w-64 bg-card border-r border-border z-30"
         data-sidebar-instance={instanceId}
         data-sidebar-type="desktop"
       >
