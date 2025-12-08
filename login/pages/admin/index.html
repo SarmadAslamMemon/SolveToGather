@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Community Platform</title>
+    <link rel="stylesheet" href="../../css/admin.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="admin-profile">
+                    <div class="profile-image-container">
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150" alt="Admin" class="admin-image" id="adminProfileImage">
+                        <input type="file" id="adminProfileImageInput" accept="image/*" style="display: none;">
+                        <div class="profile-image-overlay">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    </div>
+                    <div class="admin-info">
+                        <h3 class="admin-name">John Doe</h3>
+                        <p class="admin-title">Community Head</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">
+                    <span class="material-icons">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="material-icons">settings</span>
+                    <span>Settings</span>
+                </a>
+                <button class="logout-button">
+                    <span class="material-icons">logout</span>
+                    <span>Logout</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div class="user-info">
+                    <div class="notifications">
+                        <span class="material-icons">notifications</span>
+                        <span class="notification-badge">5</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <div class="content-wrapper">
+                    <h1>Admin Dashboard</h1>
+                    <p class="subtitle">Manage your communities and monitor activities</p>
+
+                    <!-- Action Cards -->
+                    <div class="action-cards">
+                        <div class="action-card" id="createPostBtn">
+                            <span class="material-icons">add_circle</span>
+                            <h3>Post New Issue</h3>
+                            <p>Create a new community issue</p>
+                        </div>
+                        <div class="action-card" id="createFundraisingBtn">
+                            <span class="material-icons">campaign</span>
+                            <h3>New Fundraising</h3>
+                            <p>Start a new fundraising campaign</p>
+                        </div>
+                    </div>
+
+                    <!-- Issues Overview -->
+                    <section class="overview-section">
+                        <h2>Issues Overview</h2>
+                        <div class="overview-grid">
+                            <div class="overview-card">
+                                <div class="overview-icon">
+                                    <span class="material-icons">format_list_bulleted</span>
+                                </div>
+                                <div class="overview-content">
+                                    <h3>Total Issues</h3>
+                                    <p class="overview-value">32</p>
+                                </div>
+                            </div>
+                            <div class="overview-card">
+                                <div class="overview-icon">
+                                    <span class="material-icons">check_circle</span>
+                                </div>
+                                <div class="overview-content">
+                                    <h3>Resolved</h3>
+                                    <p class="overview-value">24</p>
+                                </div>
+                            </div>
+                            <div class="overview-card">
+                                <div class="overview-icon">
+                                    <span class="material-icons">pending_actions</span>
+                                </div>
+                                <div class="overview-content">
+                                    <h3>In Progress</h3>
+                                    <p class="overview-value">8</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Fundraising Overview -->
+                    <section class="overview-section">
+                        <h2>Fundraising Overview</h2>
+                        <div class="overview-grid">
+                            <div class="overview-card">
+                                <div class="overview-icon">
+                                    <span class="material-icons">campaign</span>
+                                </div>
+                                <div class="overview-content">
+                                    <h3>Total Campaigns</h3>
+                                    <p class="overview-value">15</p>
+                                </div>
+                            </div>
+                            <div class="overview-card">
+                                <div class="overview-icon">
+                                    <span class="material-icons">payments</span>
+                                </div>
+                                <div class="overview-content">
+                                    <h3>Funds Raised</h3>
+                                    <p class="overview-value">$45,000</p>
+                                </div>
+                            </div>
+                            <div class="overview-card">
+                                <div class="overview-icon">
+                                    <span class="material-icons">trending_up</span>
+                                </div>
+                                <div class="overview-content">
+                                    <h3>Target Amount</h3>
+                                    <p class="overview-value">$75,000</p>
+                                </div>
+                            </div>
+                            <div class="overview-card">
+                                <div class="overview-icon">
+                                    <span class="material-icons">schedule</span>
+                                </div>
+                                <div class="overview-content">
+                                    <h3>Active Campaigns</h3>
+                                    <p class="overview-value">6</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Post Creation Modal -->
+    <div class="modal" id="postModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Post</h2>
+                <button class="close-modal">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="postForm">
+                    <div class="image-upload-container">
+                        <div class="image-upload-area" id="imageUploadArea">
+                            <span class="material-icons">cloud_upload</span>
+                            <p>Drop images here or click to upload</p>
+                            <input type="file" id="imageInput" multiple accept="image/*" style="display: none;">
+                        </div>
+                        <div class="image-preview" id="imagePreview"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="postTitle">Title</label>
+                        <input type="text" id="postTitle" required placeholder="Enter post title">
+                    </div>
+                    <div class="form-group">
+                        <label for="postDescription">Description</label>
+                        <textarea id="postDescription" rows="4" required placeholder="Describe the issue..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="submit-btn">Create Post</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fundraising Modal -->
+    <div class="modal" id="fundraisingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create Fundraising Campaign</h2>
+                <button class="close-modal">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="fundraisingForm">
+                    <div class="image-upload-container">
+                        <div class="image-upload-area" id="fundraisingImageUploadArea">
+                            <span class="material-icons">cloud_upload</span>
+                            <p>Drop images here or click to upload</p>
+                            <input type="file" id="fundraisingImageInput" multiple accept="image/*" style="display: none;">
+                        </div>
+                        <div class="image-preview" id="fundraisingImagePreview"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="campaignTitle">Campaign Title</label>
+                        <input type="text" id="campaignTitle" required placeholder="Enter campaign title">
+                    </div>
+                    <div class="form-group">
+                        <label for="targetAmount">Target Amount (PKR)</label>
+                        <input type="number" id="targetAmount" required placeholder="Enter target amount">
+                    </div>
+                    <div class="form-group">
+                        <label for="campaignDescription">Campaign Description</label>
+                        <textarea id="campaignDescription" rows="4" required placeholder="Describe your campaign..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="submit-btn">Create Campaign</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/admin/index.js"></script>
+</body>
+</html> 

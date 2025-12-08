@@ -466,6 +466,7 @@ export default function FeedPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
+                    className="space-y-4 sm:space-y-6"
                   >
                     {filteredPosts.map((post, index) => (
                       <PostCard

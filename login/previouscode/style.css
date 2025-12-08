@@ -1,0 +1,17 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body{
+    cursor: url('p10.png'), auto !important;
+}
+#btn-btn{
+    border-radius: 20px !important;
+    border: 1px solid #000;
+    transition: 0.7s ease-in-out;
+}
+#btn-btn:hover{
+    color: white !important;
+    background-color: black;
+}

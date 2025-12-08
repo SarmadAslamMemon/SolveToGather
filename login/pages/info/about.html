@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - CivicConnect</title>
+    <link rel="stylesheet" href="../../css/auth.css">
+    <link rel="stylesheet" href="../../css/about.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Background Slider -->
+    <div class="background-slider">
+        <div class="slide active" style="background-image: url('https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')"></div>
+        <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1521791136064-7986c2920216?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')"></div>
+        <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1507679799987-c73779587ccf?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')"></div>
+        <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')"></div>
+    </div>
+
+    <div class="about-container">
+        <div class="about-card">
+            <div class="about-header">
+                <h1>About CivicConnect</h1>
+                <p>Empowering Communities Through Technology</p>
+            </div>
+
+            <div class="about-section">
+                <h2>Project Overview</h2>
+                <p>CivicConnect is a community engagement platform designed to bridge the gap between citizens and local authorities. Our platform enables users to:</p>
+                <ul>
+                    <li>Report and track community issues</li>
+                    <li>Participate in fundraising campaigns</li>
+                    <li>Engage with local authorities</li>
+                    <li>Stay informed about community developments</li>
+                </ul>
+            </div>
+
+            <div class="about-section">
+                <h2>Why We Chose This Project</h2>
+                <p>We recognized the need for a digital platform that could:</p>
+                <ul>
+                    <li>Improve communication between citizens and authorities</li>
+                    <li>Streamline the process of reporting and resolving community issues</li>
+                    <li>Promote transparency and accountability</li>
+                    <li>Foster community engagement and participation</li>
+                </ul>
+            </div>
+
+            <div class="about-section">
+                <h2>About Us</h2>
+                <p>We are a team of Computer Science students from Benazir Bhutto Shaheed University Lyari, Batch 13 (2025). Our team is dedicated to using technology to create positive social impact in our communities.</p>
+            </div>
+
+            <div class="developers-section">
+                <h2>Our Team</h2>
+                <div class="developers-grid">
+                    <div class="developer-card">
+                        <div class="developer-image">
+                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Developer 1">
+                        </div>
+                        <h3>John Doe</h3>
+                        <p>Frontend Developer</p>
+                    </div>
+                    <div class="developer-card">
+                        <div class="developer-image">
+                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Developer 2">
+                        </div>
+                        <h3>Jane Smith</h3>
+                        <p>Backend Developer</p>
+                    </div>
+                    <div class="developer-card">
+                        <div class="developer-image">
+                            <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Developer 3">
+                        </div>
+                        <h3>Mike Johnson</h3>
+                        <p>UI/UX Designer</p>
+                    </div>
+                    <div class="developer-card">
+                        <div class="developer-image">
+                            <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Developer 4">
+                        </div>
+                        <h3>Sarah Williams</h3>
+                        <p>Project Manager</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="back-button">
+                <a href="../auth/login.html" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> Back to Login
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Background Slider
+        const slides = document.querySelectorAll('.slide');
+        let currentSlide = 0;
+
+        function nextSlide() {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+
+        setInterval(nextSlide, 5000);
+    </script>
+</body>
+</html> 

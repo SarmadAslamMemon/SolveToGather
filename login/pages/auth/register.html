@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Community Platform</title>
+    <link rel="stylesheet" href="../../css/auth.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Background Slider -->
+    <div class="background-slider">
+        <div class="slide active" style="background-image: url('https://images.unsplash.com/photo-1593113598332-cd288d649433?w=1950&q=80')"></div>
+        <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1577896851231-70ef18881754?w=1950&q=80')"></div>
+        <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1593113630400-ea4288922497?w=1950&q=80')"></div>
+        <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1593113598332-cd288d649433?w=1950&q=80')"></div>
+    </div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Create Account</h1>
+                <p>Join our community platform</p>
+            </div>
+            
+            <div class="auth-form">
+                <form id="registrationForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <div class="input-group">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="firstName" placeholder="Letters only" pattern="[A-Za-z\s]+" title="Only letters allowed" required>
+                            </div>
+                            <small class="error-message" id="firstName-error"></small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <div class="input-group">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="lastName" placeholder="Letters only" pattern="[A-Za-z\s]+" title="Only letters allowed" required>
+                            </div>
+                            <small class="error-message" id="lastName-error"></small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="email" placeholder="name@example.com" required>
+                        </div>
+                        <small class="error-message" id="email-error"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <div class="input-group">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <input type="text" id="address" placeholder="Your complete address" required>
+                        </div>
+                        <small class="error-message" id="address-error"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="community">Community</label>
+                        <div class="input-group">
+                            <i class="fas fa-users"></i>
+                            <select id="community" required>
+                                <option value="">Select community</option>
+                                <option value="community1">Community 1</option>
+                                <option value="community2">Community 2</option>
+                                <option value="community3">Community 3</option>
+                            </select>
+                        </div>
+                        <small class="error-message" id="community-error"></small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <div class="input-group">
+                                <i class="fas fa-phone"></i>
+                                <input type="tel" id="phone" name="phone" placeholder="03XXXXXXXXX" pattern="^03[0-9]{9}$" title="11-digit number starting with 03" required>
+                            </div>
+                            <small class="error-message" id="phone-error"></small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="nic">NIC Number (Optional)</label>
+                            <div class="input-group">
+                                <i class="fas fa-id-card"></i>
+                                <input type="text" id="nic" name="nic" placeholder="XXXXX-XXXXXXX-X" pattern="^[0-9]{5}-[0-9]{7}-[0-9]{1}$" title="Valid NIC format">
+                            </div>
+                            <small class="error-message" id="nic-error"></small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="age">Age</label>
+                        <div class="input-group">
+                            <i class="fas fa-birthday-cake"></i>
+                            <input type="number" id="age" placeholder="18+" min="18" max="120" required>
+                        </div>
+                        <small class="error-message" id="age-error"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gender">Gender</label>
+                        <div class="input-group">
+                            <i class="fas fa-venus-mars"></i>
+                            <select id="gender" required>
+                                <option value="">Select gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <small class="error-message" id="gender-error"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="password" placeholder="Min. 8 characters" required>
+                            <i class="fas fa-eye toggle-password"></i>
+                        </div>
+                        <small class="error-message" id="password-error"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="confirmPassword" placeholder="Confirm password" required>
+                            <i class="fas fa-eye toggle-password"></i>
+                        </div>
+                        <small class="error-message" id="confirmPassword-error"></small>
+                    </div>
+
+                    <button type="submit" class="auth-button">Register</button>
+                </form>
+                
+                <div class="auth-footer">
+                    <p>Already have an account? <a href="login.html">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/auth/register.js"></script>
+    <script>
+        // Background Slider
+        const slides = document.querySelectorAll('.slide');
+        let currentSlide = 0;
+
+        function nextSlide() {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+
+        setInterval(nextSlide, 5000);
+    </script>
+</body>
+</html> 

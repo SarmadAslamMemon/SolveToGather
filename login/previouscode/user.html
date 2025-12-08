@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="flex min-h-screen bg-gray-100">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-blue-600 text-white p-6 flex flex-col transition-transform duration-300 transform">
+        <button id="toggleSidebar" class="absolute top-4 right-4 bg-white text-blue-600 p-2 rounded">☰</button>
+        <div class="flex flex-col items-center">
+            <img src="/mnt/data/Name.jpg" alt="Profile Image" class="w-24 h-24 rounded-full mb-4">
+            <h2 class="text-xl font-bold">User Dashboard</h2>
+        </div>
+        <div class="mt-6">
+            <p class="font-semibold">Name: <span id="userName"></span></p>
+            <p class="font-semibold">CNIC: <span id="userCnic"></span></p>
+            <p class="font-semibold">Community: <span id="userCommunity"></span></p>
+            <p class="font-semibold">Age: <span id="userAge"></span></p>
+            <p class="font-semibold">Phone: <span id="userPhone"></span></p>
+            <p class="font-semibold">Gender: <span id="userGender"></span></p>
+        </div>
+        <button onclick="logout()" class="mt-auto bg-red-500 p-2 rounded text-white">Logout</button>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="flex-1 p-10">
+        <h1 class="text-3xl font-bold text-gray-800">Welcome, <span id="userGreeting"></span>!</h1>
+        <p class="mt-2 text-gray-600">This is your dashboard where you can access your details and manage your profile.</p>
+        
+        <!-- Cards Section -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <div class="h-40 bg-gray-300 rounded-md"></div>
+                <button class="mt-4 w-full bg-blue-600 text-white p-2 rounded">Read More</button>
+            </div>
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <div class="h-40 bg-gray-300 rounded-md"></div>
+                <button class="mt-4 w-full bg-blue-600 text-white p-2 rounded">Read More</button>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Toggle sidebar
+        document.getElementById("toggleSidebar").addEventListener("click", function () {
+            document.getElementById("sidebar").classList.toggle("-translate-x-full");
+        });
+
+        // Fetch user data from localStorage
+        document.addEventListener("DOMContentLoaded", function () {
+            const user = JSON.parse(localStorage.getItem("loggedInUser"));
+            if (!user) {
+                window.location.href = "index.html"; // Redirect to login if not logged in
+            } else {
+                document.getElementById("userName").innerText = user.firstName + " " + user.lastName;
+                document.getElementById("userCnic").innerText = user.cnic;
+                document.getElementById("userCommunity").innerText = user.community || "N/A";
+                document.getElementById("userAge").innerText = user.age || "N/A";
+                document.getElementById("userPhone").innerText = user.phone;
+                document.getElementById("userGender").innerText = user.gender || "N/A";
+                document.getElementById("userGreeting").innerText = user.firstName;
+            }
+        });
+        
+        // Logout function
+        function logout() {
+            localStorage.removeItem("loggedInUser");
+            window.location.href = "index.html";
+        }
+    </script>
+</body>
+</html>

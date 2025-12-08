@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Signup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+    <div class="w-full max-w-5xl bg-white shadow-lg rounded-lg flex flex-wrap overflow-hidden">
+        <!-- Left Side -->
+        <div id="imageSection" class="w-full md:w-1/2 flex flex-col items-center justify-center p-10 transition-all duration-500">
+            <h2 id="imageHeading" class="text-4xl font-bold mb-4 text-gray-800">Welcome Back!</h2>
+            <p id="imageText" class="text-lg text-center leading-relaxed text-gray-600">Login to continue your journey with us.</p>
+            <img id="sideImage" src="back.jpg" class="mt-6 w-full rounded-lg shadow-md" alt="Placeholder Image">
+        </div>
+        
+        <!-- Right Side (Forms) -->
+        <div class="w-full md:w-1/2 p-10 flex flex-col justify-center">
+            <!-- Login Form -->
+            <div id="loginForm" class="transition-all duration-500">
+                <h2 class="text-3xl font-bold mb-6 text-gray-800">Login</h2>
+                <input type="text" id="loginCnic" placeholder="CNIC Number" class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500">
+                <input type="password" id="loginPassword" placeholder="Password" class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700">Login</button>
+                <p class="mt-6 text-center text-gray-600">Don't have an account? <span class="text-blue-600 cursor-pointer font-semibold" onclick="showSignup()">Register</span></p>
+            </div>
+            
+            <!-- Signup Form -->
+            <div id="signupForm" class="hidden transition-all duration-500">
+                <h2 class="text-3xl font-bold mb-6 text-gray-800">Register</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="firstName" placeholder="First Name" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="lastName" placeholder="Last Name" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <input type="text" id="address" placeholder="Address" class="w-full p-3 border rounded-lg my-4 focus:ring-2 focus:ring-blue-500">
+                <select id="community" class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500">
+                    <option value="">Select Community</option>
+                    <option value="Community1">Community 1</option>
+                    <option value="Community2">Community 2</option>
+                </select>
+                <input type="text" id="signupCnic" placeholder="CNIC Number" class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500">
+                <select id="gender" class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500">
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="age" placeholder="Age" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="phone" placeholder="Phone Number" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <input type="password" id="signupPassword" placeholder="Password" class="w-full p-3 border rounded-lg my-4 focus:ring-2 focus:ring-blue-500">
+                <input type="password" id="confirmPassword" placeholder="Confirm Password" class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500">
+                <button onclick="handleSignup()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700">Register</button>
+                <p class="mt-6 text-center text-gray-600">Already have an account? <span class="text-blue-600 cursor-pointer font-semibold" onclick="showLogin()">Login</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSignup() {
+            document.getElementById("loginForm").classList.add("hidden");
+            document.getElementById("signupForm").classList.remove("hidden");
+            document.getElementById("imageHeading").innerText = "Join Us Today!";
+            document.getElementById("imageText").innerText = "Create an account to get started.";
+        }
+
+        function showLogin() {
+            document.getElementById("signupForm").classList.add("hidden");
+            document.getElementById("loginForm").classList.remove("hidden");
+            document.getElementById("imageHeading").innerText = "Welcome Back!";
+            document.getElementById("imageText").innerText = "Login to continue your journey with us.";
+        }
+
+        function handleSignup() {
+            const cnic = document.getElementById("signupCnic").value;
+            const password = document.getElementById("signupPassword").value;
+            localStorage.setItem(cnic, password);
+            alert("Registration successful! Please login.");
+            showLogin();
+        }
+
+        function handleLogin() {
+            const cnic = document.getElementById("loginCnic").value;
+            const password = document.getElementById("loginPassword").value;
+            window.location.href = "admin.html";
+            if (cnic === "1234567899876" && password === "123123") {
+                window.location.href = "admin.html";
+            } else if (localStorage.getItem(cnic) === password) {
+                window.location.href = "user.html";
+            } else {
+                alert("Invalid credentials or not registered. Please register.");
+            }
+        }
+    </script>
+</body>
+</html>

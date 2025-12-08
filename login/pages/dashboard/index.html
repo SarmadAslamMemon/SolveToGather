@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - Community Platform</title>
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/fundraising-modal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-profile">
+                    <div class="profile-image-container">
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150" alt="Profile" class="profile-image" id="profileImage">
+                        <input type="file" id="profileImageInput" accept="image/*" style="display: none;">
+                        <div class="profile-image-overlay">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    </div>
+                    <span class="user-name">John Doe</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+                <button class="logout-button" id="logoutButton">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <div class="user-actions">
+                    <button class="notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="dashboard-content">
+                <h1>Welcome to Your Dashboard</h1>
+                <p class="subtitle">Stay updated with community activities and discussions</p>
+
+                <!-- Trending Issues -->
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2>Trending Issues</h2>
+                        <a href="../../previouscode/user-dashboard/userposts.html" class="view-all">View All</a>
+                    </div>
+                    <div class="issues-grid">
+                        <div class="issue-card">
+                            <img src="https://images.unsplash.com/photo-1584466977773-e625c37cdd50?w=800&h=400&fit=crop" alt="Community Park">
+                            <div class="issue-content">
+                                <h3>Community Park Renovation</h3>
+                                <p>Help us renovate the local park for better community space</p>
+                                <div class="issue-stats">
+                                    <span><i class="fas fa-users"></i> 150 supporters</span>
+                                    <span><i class="fas fa-comments"></i> 45 comments</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="issue-card">
+                            <img src="https://images.unsplash.com/photo-1605559911160-a3d95d213904?w=800&h=400&fit=crop" alt="Road Safety">
+                            <div class="issue-content">
+                                <h3>Road Safety Improvements</h3>
+                                <p>Campaign for better road safety measures in our area</p>
+                                <div class="issue-stats">
+                                    <span><i class="fas fa-users"></i> 200 supporters</span>
+                                    <span><i class="fas fa-comments"></i> 78 comments</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Fundraising Campaigns -->
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2>Fundraising Campaigns</h2>
+                    </div>
+                    <div class="campaigns-grid">
+                        <div class="campaign-card" onclick="showFundraisingModal()">
+                            <img src="https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&h=400" alt="Campaign 1">
+                            <div class="campaign-content">
+                                <h3>Community Development Fund</h3>
+                                <p>Help us improve community infrastructure</p>
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress" style="width: 65%"></div>
+                                    </div>
+                                    <div class="progress-info">
+                                        <span>₨6,500 raised</span>
+                                        <span>₨10,000 goal</span>
+                                    </div>
+                                </div>
+                                <button class="donate-button">Donate Now</button>
+                            </div>
+                        </div>
+                        <div class="campaign-card" onclick="showFundraisingModal()">
+                            <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=400" alt="Campaign 2">
+                            <div class="campaign-content">
+                                <h3>Educational Program</h3>
+                                <p>Support local education initiatives and help children get a better education
+                                
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress" style="width: 45%"></div>
+                                    </div>
+                                    <div class="progress-info">
+                                        <span>₨4,500 raised</span>
+                                        <span>₨10,000 goal</span>
+                                    </div>
+                                </div>
+                                <button class="donate-button">Donate Now</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Fundraising Modal -->
+    <div class="modal-overlay" id="fundraisingModal">
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            
+            <!-- Image Slider -->
+            <div class="image-slider">
+                <div class="slider-container">
+                    <div class="slide active">
+                        <img src="https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&h=400" alt="Campaign Image 1">
+                    </div>
+                    <div class="slide">
+                        <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=400" alt="Campaign Image 2">
+                    </div>
+                </div>
+                <button class="slider-nav prev"><i class="fas fa-chevron-left"></i></button>
+                <button class="slider-nav next"><i class="fas fa-chevron-right"></i></button>
+            </div>
+
+            <!-- Campaign Details -->
+            <div class="campaign-details">
+                <h2 class="campaign-title">Community Development Fund</h2>
+                <p class="campaign-description">
+                    Help us improve our community infrastructure and create better living conditions for everyone.
+                </p>
+                
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-info">
+                        <div class="progress-stat">
+                            <span class="label">Target Amount</span>
+                            <span class="value">₨10,000</span>
+                        </div>
+                        <div class="progress-stat">
+                            <span class="label">Amount Raised</span>
+                            <span class="value">₨6,500</span>
+                        </div>
+                        <div class="progress-stat">
+                            <span class="label">Remaining</span>
+                            <span class="value">₨3,500</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: 65%"></div>
+                    </div>
+                </div>
+
+                <!-- Payment Options -->
+                <div class="payment-options">
+                    <h3>Choose Payment Method</h3>
+                    <div class="payment-methods">
+                        <button class="payment-method" data-method="jazzcash">
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>JazzCash</span>
+                        </button>
+                        <button class="payment-method" data-method="easypaisa">
+                            <i class="fas fa-wallet"></i>
+                            <span>EasyPaisa</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Donation Form -->
+                <div class="donation-form">
+                    <h3>Make a Donation</h3>
+                    <div class="amount-options">
+                        <button class="amount-option">₨1,000</button>
+                        <button class="amount-option">₨2,500</button>
+                        <button class="amount-option">₨5,000</button>
+                        <button class="amount-option">₨10,000</button>
+                        <button class="amount-option">Custom</button>
+                    </div>
+                    <div class="custom-amount" style="display: none;">
+                        <input type="number" placeholder="Enter amount (PKR)" min="1">
+                    </div>
+                    <button class="donate-button">Donate Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/fundraising-modal.js"></script>
+    <script src="../../js/dashboard/index.js"></script>
+</body>
+</html> 

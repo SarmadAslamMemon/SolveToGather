@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fundraising Campaign</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/fundraising-modal.css">
+</head>
+<body>
+    <div class="modal-overlay" id="fundraisingModal">
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            
+            <!-- Image Slider -->
+            <div class="image-slider">
+                <div class="slider-container">
+                    <div class="slide active">
+                        <img src="../../assets/campaign1.jpg" alt="Campaign Image 1">
+                    </div>
+                    <div class="slide">
+                        <img src="../../assets/campaign2.jpg" alt="Campaign Image 2">
+                    </div>
+                    <div class="slide">
+                        <img src="../../assets/campaign3.jpg" alt="Campaign Image 3">
+                    </div>
+                </div>
+                <button class="slider-nav prev"><i class="fas fa-chevron-left"></i></button>
+                <button class="slider-nav next"><i class="fas fa-chevron-right"></i></button>
+            </div>
+
+            <!-- Campaign Details -->
+            <div class="campaign-details">
+                <h2 class="campaign-title">Community Development Fund</h2>
+                <p class="campaign-description">
+                    Help us improve our community infrastructure and create better living conditions for everyone.
+                </p>
+                
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-info">
+                        <div class="progress-stat">
+                            <span class="label">Target Amount</span>
+                            <span class="value">$10,000</span>
+                        </div>
+                        <div class="progress-stat">
+                            <span class="label">Amount Raised</span>
+                            <span class="value">$6,500</span>
+                        </div>
+                        <div class="progress-stat">
+                            <span class="label">Remaining</span>
+                            <span class="value">$3,500</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: 65%"></div>
+                    </div>
+                </div>
+
+                <!-- Payment Options -->
+                <div class="payment-options">
+                    <h3>Choose Payment Method</h3>
+                    <div class="payment-methods">
+                        <button class="payment-method" data-method="jazzcash">
+                            <img src="../../assets/jazzcash-logo.png" alt="JazzCash">
+                            <span>JazzCash</span>
+                        </button>
+                        <button class="payment-method" data-method="easypaisa">
+                            <img src="../../assets/easypaisa-logo.png" alt="EasyPaisa">
+                            <span>EasyPaisa</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Donation Form -->
+                <div class="donation-form">
+                    <h3>Make a Donation</h3>
+                    <div class="amount-options">
+                        <button class="amount-option">$10</button>
+                        <button class="amount-option">$25</button>
+                        <button class="amount-option">$50</button>
+                        <button class="amount-option">$100</button>
+                        <button class="amount-option">Custom</button>
+                    </div>
+                    <div class="custom-amount" style="display: none;">
+                        <input type="number" placeholder="Enter amount" min="1">
+                    </div>
+                    <button class="donate-button">Donate Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/fundraising-modal.js"></script>
+</body>
+</html> 

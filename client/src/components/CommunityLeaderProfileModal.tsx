@@ -84,8 +84,8 @@ export default function CommunityLeaderProfileModal({ isOpen, onClose, leader }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] sm:max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-hidden p-0">
-        <div className="flex flex-col sm:flex-row h-[90vh]">
+      <DialogContent className="w-[95vw] sm:max-w-4xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto p-0">
+        <div className="flex flex-col sm:flex-row sm:h-[85vh]">
           {/* Left Half - Profile Image */}
           <div className="w-full sm:w-1/2 bg-gradient-to-br from-blue-50 to-orange-50 dark:from-blue-900/20 dark:to-orange-900/20 flex items-center justify-center p-4 sm:p-8">
             <div className="text-center">
@@ -102,7 +102,7 @@ export default function CommunityLeaderProfileModal({ isOpen, onClose, leader }:
           </div>
 
           {/* Right Half - Details */}
-          <div className="w-full sm:w-1/2 flex flex-col">
+          <div className="w-full sm:w-1/2 flex flex-col min-h-0">
             {/* Header */}
             <div className="flex items-center p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
               <DialogTitle className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-slate-200">
@@ -111,7 +111,7 @@ export default function CommunityLeaderProfileModal({ isOpen, onClose, leader }:
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="flex-1 sm:overflow-y-auto p-4 sm:p-6">
               <div className="space-y-4 sm:space-y-6">
                 {/* Basic Information */}
                 <Card className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700">
